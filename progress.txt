@@ -1,0 +1,112 @@
+# AI EDA Copilot — 进度记录
+
+## 2026-03-07
+
+### 文档阶段 ✅
+- [x] CLAUDE.md（项目操作手册）
+- [x] PRD.md（产品需求文档）
+- [x] TECH_STACK.md（技术栈文档）
+- [x] BACKEND_STRUCTURE.md（业务逻辑与数据架构）
+- [x] IMPLEMENTATION_PLAN.md（实施计划，9 阶段）
+- [ ] APP_FLOW.md（用户流程，待补）
+- [ ] FRONTEND_GUIDELINES.md（前端规范，待补）
+
+### Phase 0 — 工程初始化 ✅
+- [x] package.json + tsconfig 双配置 + esbuild
+- [x] .vscode/ 开发体验配置
+- [x] 最小激活函数 + 空命令
+- [x] 编译 + 打包验证
+
+### Phase 1 — 插件骨架 ✅
+- [x] 消息协议类型（shared/types/messages.types.ts）
+  - BaseMessage 泛型基础结构
+  - PanelToExtension / ExtensionToPanel / ExtensionToReport / ReportToExtension 四方向类型
+  - createMessage 工厂函数
+- [x] SidePanelProvider（WebviewViewProvider 实现）
+  - 生命周期管理 + CSP 安全策略 + React 加载
+  - onMessage / postMessage 消息接口
+- [x] ReportPanelManager（WebviewPanel 单例管理）
+  - openOrFocus 单例复用 + 消息路由
+- [x] 命令注册模块（extension/commands/index.ts）
+- [x] activate.ts 更新：注册 Provider + 消息路由 + 临时回显
+- [x] Side Panel React App（PanelApp.tsx）
+  - 对话输入 + 消息列表 + Open Report 按钮
+  - 监听 Extension→Panel 消息
+- [x] Report Tab React App（ReportApp.tsx）
+  - 6-Tab 导航（Overview/Requirements/BOM/Schematic/PCB/Procurement）
+  - 流式内容接收 + 导出按钮
+- [x] CSS 变量桥接（variables.css → VS Code 主题变量别名）
+- [x] vscodeApi 封装（acquireVsCodeApi 单例缓存）
+- [x] esbuild 双入口构建（extension + panel + report）
+- [x] 编译通过（tsc 类型检查 + esbuild 三入口）
+- [x] .vsix 打包成功（9 files, 97 KB）
+
+### Phase 2 — 输入层 ✅
+- [x] 输入类型定义（shared/types/input.types.ts）
+  - AnalysisRequest 统一请求结构
+  - FormInputData 11 字段对齐 RequirementSpec（核心 6 + 扩展 6）
+  - createEmptyFormData() 工厂函数
+- [x] 模板类型（shared/types/template.types.ts）+ 5 个 V1 模板常量
+  - esp32-sensor / stm32-controller / oled-display / battery-powered / power-module
+- [x] InputService（extension/services/InputService.ts）
+  - fromNaturalLanguage() / fromForm() / fromTemplate() 三入口标准化
+  - _formToText() 序列化供 AI prompt 消费
+- [x] Zustand inputStore（panel/store/inputStore.ts）
+  - mode / chatText / formData / messages / status / isGenerating
+  - 完整 action 集合
+- [x] InputModeToggle 组件（Chat / Form 切换）
+- [x] ChatInput 组件（Enter 发送 + isGenerating 禁用）
+- [x] FormInput 组件（核心字段 + 折叠扩展字段 + Analyze 按钮）
+- [x] TemplateSelector 组件（卡片网格 → 自动填充表单 + 切换 form 模式）
+- [x] PanelApp.tsx 重构：Phase 1 内联实现 → 组件化 + Zustand
+  - 空状态展示模板选择器
+  - 输入区域按 mode 切换 ChatInput / FormInput
+- [x] activate.ts 路由扩展：select_template + InputService 标准化接线
+- [x] PanelApp.css 精简：移除内联样式，各组件自带 CSS
+- [x] 编译通过 + .vsix 打包（9 files, 101 KB）
+
+### Phase 3 — AI 主管线 MVP ✅
+- [x] AI 层类型定义（shared/types/ai.types.ts）
+  - AiCompletionParams / AiMessage / AiStreamChunk / AiErrorCode / RetryState
+  - RETRYABLE_ERRORS 集合 + createRetryState 工厂
+- [x] 领域产物类型（shared/types/artifacts.types.ts）
+  - RequirementField（含 status / note，对齐 BACKEND_STRUCTURE §4.2）
+  - OpenQuestion（priority: critical/important/optional，含 resolved/answer）
+  - RequirementSpec（含 createdAt / source / rawInput 元数据）
+  - OverviewData / FunctionalModule
+- [x] shared/types/index.ts 更新 re-export
+- [x] AiAdapter（extension/adapters/AiAdapter.ts）
+  - OpenAI SDK 封装，懒初始化 + 配置变更检测
+  - stream() AsyncGenerator + complete() 非流式
+  - classifyError() 错误分类 + AiAdapterError
+- [x] StreamBuffer（extension/services/StreamBuffer.ts）
+  - 100ms 批量缓冲（对齐 TECH_STACK §11.2）
+- [x] requirementPrompt（extension/prompts/requirementPrompt.ts）
+  - system + user prompt，指导 AI 输出 RequirementSpec JSON
+  - 支持 zh/en 语言配置
+  - 字段含 status 维度（confirmed / pending_confirmation）
+- [x] AiPipelineService（extension/services/AiPipelineService.ts）
+  - runRequirementStage() 管线编排
+  - API Key 首次检测 + SecretStorage 存储（对齐 TECH_STACK §9）
+  - 10 次 / 15s 重试（对齐 TECH_STACK §12）
+  - 流式双通道：Panel 看原始文本流，Report 收结构化 JSON
+  - JSON 提取 + 修复（fenced block / 尾逗号 / 单引号）
+  - deriveOverview() 本地派生（无额外 AI 调用）
+  - isRunning 并发锁
+- [x] activate.ts 改造：临时 stub → AiPipelineService 注入
+- [x] commands/index.ts 新增 aiEda.configureApiKey 命令
+- [x] package.json 注册 configureApiKey 命令
+- [x] reportStore（webview/report/store/reportStore.ts）
+  - Zustand：requirementSpec + overview + streamContent + editingFields
+- [x] OverviewSection（webview/report/components/OverviewSection.tsx + .css）
+  - 摘要 / 就绪度进度条 / 字段统计 / 功能模块 / 关键组件 / 开放问题 / 风险 / 下一步
+- [x] RequirementsSection（webview/report/components/RequirementsSection.tsx + .css）
+  - 核心字段 + 折叠扩展字段 + source/status/confidence 标注 + 受控内存态编辑
+- [x] ReportApp.tsx 改造：引入 reportStore + Overview/Requirements 组件渲染
+- [x] 编译通过 + .vsix 打包（9 files, 230.6 KB）
+
+### 下一步：Phase 4 — BOM + 采购 MVP
+- BOM 生成 prompt + 解析器
+- JlcAdapter（JLCPCB API + jlcsearch fallback）
+- ProcurementService
+- BOM 表格组件 + CSV 导出

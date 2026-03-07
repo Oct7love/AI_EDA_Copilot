@@ -1,0 +1,87 @@
+.report-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Tab 导航 */
+.report-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--eda-border);
+  background: var(--eda-bg-secondary);
+  overflow-x: auto;
+}
+
+.tab-button {
+  padding: var(--eda-space-2) var(--eda-space-4);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--eda-fg-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-button:hover {
+  color: var(--eda-fg-primary);
+}
+
+.tab-active {
+  color: var(--eda-fg-primary);
+  border-bottom-color: var(--eda-accent);
+}
+
+/* 报告内容区 */
+.report-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--eda-space-5);
+}
+
+.section-placeholder h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: var(--eda-space-4);
+}
+
+.empty-hint {
+  color: var(--eda-fg-muted);
+  font-size: 14px;
+}
+
+.stream-output {
+  font-family: var(--eda-font-mono);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--eda-bg-secondary);
+  padding: var(--eda-space-4);
+  border-radius: var(--eda-radius-md);
+  border: 1px solid var(--eda-border);
+}
+
+/* 底部导出栏 */
+.report-footer {
+  display: flex;
+  gap: var(--eda-space-2);
+  padding: var(--eda-space-3) var(--eda-space-5);
+  border-top: 1px solid var(--eda-border);
+  background: var(--eda-bg-secondary);
+}
+
+.btn-export {
+  padding: var(--eda-space-1) var(--eda-space-3);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  background: transparent;
+  color: var(--eda-fg-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-export:hover {
+  background: var(--eda-bg-hover);
+}

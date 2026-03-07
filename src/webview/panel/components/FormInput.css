@@ -1,0 +1,93 @@
+.form-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-3);
+}
+
+.form-section {
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-md);
+  padding: var(--eda-space-3);
+}
+
+.form-section legend {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eda-fg-secondary);
+  padding: 0 var(--eda-space-1);
+}
+
+.form-section-collapsible {
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-md);
+  padding: var(--eda-space-2) var(--eda-space-3);
+}
+
+.form-section-collapsible summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eda-fg-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-section-body {
+  margin-top: var(--eda-space-2);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-1);
+  margin-bottom: var(--eda-space-2);
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eda-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-text,
+.form-textarea {
+  width: 100%;
+  padding: var(--eda-space-1) var(--eda-space-2);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  background: var(--eda-bg-secondary);
+  color: var(--eda-fg-primary);
+  font-family: var(--eda-font-family);
+  font-size: 13px;
+}
+
+.form-text:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--eda-accent);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 40px;
+}
+
+.btn-analyze {
+  padding: var(--eda-space-2) var(--eda-space-4);
+  border: none;
+  border-radius: var(--eda-radius-sm);
+  background: var(--eda-button-bg);
+  color: var(--eda-button-fg);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btn-analyze:hover:not(:disabled) {
+  background: var(--eda-button-hover);
+}
+
+.btn-analyze:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

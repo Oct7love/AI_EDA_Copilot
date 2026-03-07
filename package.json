@@ -1,0 +1,99 @@
+{
+  "name": "ai-eda-copilot",
+  "displayName": "AI EDA Copilot",
+  "description": "AI-powered electronics design assistant — generate structured hardware design reports from natural language descriptions",
+  "version": "0.1.0",
+  "publisher": "ai-eda",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiEda.openReport",
+        "title": "AI EDA: Open Report"
+      },
+      {
+        "command": "aiEda.showPanel",
+        "title": "AI EDA: Show Side Panel"
+      },
+      {
+        "command": "aiEda.configureApiKey",
+        "title": "AI EDA: Configure API Key"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "aiEdaCopilot",
+          "title": "AI EDA Copilot",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "aiEdaCopilot": [
+        {
+          "type": "webview",
+          "id": "aiEdaCopilot.sidePanel",
+          "name": "AI EDA Copilot"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI EDA Copilot",
+      "properties": {
+        "aiEda.apiBaseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "AI API Base URL (OpenAI-compatible relay)"
+        },
+        "aiEda.model": {
+          "type": "string",
+          "default": "claude-sonnet-4-20250514",
+          "description": "AI model name for analysis pipeline"
+        },
+        "aiEda.reportLanguage": {
+          "type": "string",
+          "enum": [
+            "zh",
+            "en"
+          ],
+          "default": "zh",
+          "description": "Report output language"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "npm run check-types && node esbuild.js",
+    "check-types": "tsc --noEmit",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "vscode:prepublish": "npm run package",
+    "package": "npm run check-types && node esbuild.js --production",
+    "lint": "eslint src --ext ts,tsx"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/vscode": "^1.96.0",
+    "esbuild": "^0.24.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zustand": "^5.0.0",
+    "openai": "^4.80.0"
+  }
+}

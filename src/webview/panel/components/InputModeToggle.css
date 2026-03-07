@@ -1,0 +1,26 @@
+.mode-toggle {
+  display: flex;
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  overflow: hidden;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: var(--eda-space-1) var(--eda-space-3);
+  border: none;
+  background: transparent;
+  color: var(--eda-fg-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-btn:not(:last-child) {
+  border-right: 1px solid var(--eda-border);
+}
+
+.mode-active {
+  background: var(--eda-button-bg);
+  color: var(--eda-button-fg);
+}

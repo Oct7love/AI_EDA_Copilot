@@ -1,0 +1,85 @@
+.panel-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: var(--eda-space-3);
+  gap: var(--eda-space-3);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--eda-fg-primary);
+}
+
+.message-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2);
+}
+
+.empty-state {
+  padding: var(--eda-space-4) 0;
+}
+
+.message {
+  padding: var(--eda-space-2) var(--eda-space-3);
+  border-radius: var(--eda-radius-md);
+  font-size: 13px;
+}
+
+.message-user {
+  background: var(--eda-bg-hover);
+}
+
+.message-assistant {
+  background: var(--eda-bg-secondary);
+  border: 1px solid var(--eda-border);
+}
+
+.message-role {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--eda-fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.message-content {
+  margin-top: var(--eda-space-1);
+  white-space: pre-wrap;
+}
+
+.status-bar {
+  font-size: 12px;
+  color: var(--eda-fg-secondary);
+  padding: var(--eda-space-1) var(--eda-space-2);
+}
+
+.input-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2);
+}
+
+.btn-secondary {
+  padding: var(--eda-space-1) var(--eda-space-3);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  background: transparent;
+  color: var(--eda-fg-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--eda-bg-hover);
+}

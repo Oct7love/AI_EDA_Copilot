@@ -1,0 +1,65 @@
+/*
+ * VS Code CSS 变量桥接
+ * Webview 内自动继承宿主主题变量，此处定义组件级别语义别名
+ */
+
+:root {
+  /* 背景 */
+  --eda-bg-primary: var(--vscode-editor-background);
+  --eda-bg-secondary: var(--vscode-sideBar-background);
+  --eda-bg-hover: var(--vscode-list-hoverBackground);
+
+  /* 前景 */
+  --eda-fg-primary: var(--vscode-editor-foreground);
+  --eda-fg-secondary: var(--vscode-descriptionForeground);
+  --eda-fg-muted: var(--vscode-disabledForeground);
+
+  /* 边框 */
+  --eda-border: var(--vscode-panel-border);
+
+  /* 交互 */
+  --eda-accent: var(--vscode-focusBorder);
+  --eda-button-bg: var(--vscode-button-background);
+  --eda-button-fg: var(--vscode-button-foreground);
+  --eda-button-hover: var(--vscode-button-hoverBackground);
+
+  /* 状态 */
+  --eda-error: var(--vscode-errorForeground);
+  --eda-warning: var(--vscode-editorWarning-foreground);
+  --eda-info: var(--vscode-editorInfo-foreground);
+
+  /* 间距 */
+  --eda-space-1: 4px;
+  --eda-space-2: 8px;
+  --eda-space-3: 12px;
+  --eda-space-4: 16px;
+  --eda-space-5: 20px;
+  --eda-space-6: 24px;
+
+  /* 圆角 */
+  --eda-radius-sm: 6px;
+  --eda-radius-md: 8px;
+  --eda-radius-lg: 12px;
+
+  /* 字体 */
+  --eda-font-family: var(--vscode-font-family);
+  --eda-font-size: var(--vscode-font-size);
+  --eda-font-mono: var(--vscode-editor-font-family);
+}
+
+/* 全局重置 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--eda-font-family);
+  font-size: var(--eda-font-size);
+  color: var(--eda-fg-primary);
+  background-color: var(--eda-bg-primary);
+  line-height: 1.5;
+}

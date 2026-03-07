@@ -1,0 +1,295 @@
+.overview-root {
+  padding: var(--eda-space-4, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-4, 1.5rem);
+}
+
+.overview-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12rem;
+  color: var(--eda-fg-muted, #888);
+  font-size: 0.875rem;
+}
+
+/* 摘要卡片 */
+.overview-summary-card {
+  background: var(--eda-bg-secondary, #1e1e1e);
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-md, 6px);
+  padding: var(--eda-space-3, 1rem);
+}
+
+.overview-summary-card h2 {
+  margin: 0 0 var(--eda-space-2, 0.5rem);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--eda-fg-primary, #d4d4d4);
+}
+
+.overview-summary-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--eda-fg-secondary, #a0a0a0);
+}
+
+/* 就绪度 */
+.overview-readiness-card {
+  background: var(--eda-bg-secondary, #1e1e1e);
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-md, 6px);
+  padding: var(--eda-space-3, 1rem);
+}
+
+.overview-readiness-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--eda-space-2, 0.5rem);
+}
+
+.overview-readiness-header h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--eda-fg-primary, #d4d4d4);
+}
+
+.overview-readiness-score {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--eda-accent, #007acc);
+  font-family: var(--eda-font-mono, monospace);
+}
+
+.overview-progress-track {
+  height: 6px;
+  background: var(--eda-bg-primary, #252526);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--eda-space-3, 1rem);
+}
+
+.overview-progress-fill {
+  height: 100%;
+  background: var(--eda-accent, #007acc);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.overview-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.overview-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--eda-space-2, 0.5rem);
+  background: var(--eda-bg-primary, #252526);
+  border-radius: var(--eda-radius-sm, 4px);
+}
+
+.overview-stat-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--eda-fg-primary, #d4d4d4);
+  font-family: var(--eda-font-mono, monospace);
+}
+
+.overview-stat-label {
+  font-size: 0.7rem;
+  color: var(--eda-fg-muted, #888);
+  text-align: center;
+}
+
+/* 通用 section */
+.overview-section {
+  background: var(--eda-bg-secondary, #1e1e1e);
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-md, 6px);
+  padding: var(--eda-space-3, 1rem);
+}
+
+.overview-section h3 {
+  margin: 0 0 var(--eda-space-2, 0.75rem);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--eda-fg-primary, #d4d4d4);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* 功能模块 */
+.overview-modules-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.overview-module-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--eda-space-2, 0.5rem);
+  padding: var(--eda-space-2, 0.5rem);
+  border-radius: var(--eda-radius-sm, 4px);
+  background: var(--eda-bg-primary, #252526);
+}
+
+.overview-module-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.overview-module-badge--core {
+  background: rgba(0, 122, 204, 0.2);
+  color: var(--eda-accent, #007acc);
+  border: 1px solid rgba(0, 122, 204, 0.4);
+}
+
+.overview-module-badge--optional {
+  background: rgba(128, 128, 128, 0.15);
+  color: var(--eda-fg-muted, #888);
+  border: 1px solid rgba(128, 128, 128, 0.3);
+}
+
+.overview-module-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.overview-module-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--eda-fg-primary, #d4d4d4);
+  margin-bottom: 2px;
+}
+
+.overview-module-desc {
+  font-size: 0.75rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+  line-height: 1.4;
+}
+
+/* 关键组件标签 */
+.overview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--eda-space-1, 0.25rem);
+}
+
+.overview-tag {
+  padding: 2px 8px;
+  background: var(--eda-bg-hover, #2a2d2e);
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-sm, 4px);
+  font-size: 0.75rem;
+  font-family: var(--eda-font-mono, monospace);
+  color: var(--eda-fg-secondary, #a0a0a0);
+}
+
+/* 开放问题 */
+.overview-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.overview-question-item {
+  display: flex;
+  gap: var(--eda-space-2, 0.5rem);
+  align-items: flex-start;
+  padding: var(--eda-space-2, 0.5rem);
+  background: var(--eda-bg-primary, #252526);
+  border-radius: var(--eda-radius-sm, 4px);
+  border-left: 3px solid transparent;
+}
+
+.overview-question-item--critical {
+  border-left-color: #f14c4c;
+}
+
+.overview-question-item--important {
+  border-left-color: #cca700;
+}
+
+.overview-question-item--optional {
+  border-left-color: #888;
+}
+
+.overview-question-priority {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-top: 1px;
+}
+
+.overview-question-priority--critical {
+  background: rgba(241, 76, 76, 0.15);
+  color: #f14c4c;
+}
+
+.overview-question-priority--important {
+  background: rgba(204, 167, 0, 0.15);
+  color: #cca700;
+}
+
+.overview-question-priority--optional {
+  background: rgba(136, 136, 136, 0.15);
+  color: #888;
+}
+
+.overview-question-text {
+  font-size: 0.8125rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+  line-height: 1.5;
+}
+
+/* 风险 & 下一步 */
+.overview-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-1, 0.25rem);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.overview-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--eda-space-2, 0.5rem);
+  font-size: 0.8125rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+  line-height: 1.5;
+  padding: var(--eda-space-1, 0.25rem) 0;
+}
+
+.overview-list-item::before {
+  content: '›';
+  flex-shrink: 0;
+  color: var(--eda-accent, #007acc);
+  font-weight: 700;
+}
+
+.overview-risk-item::before {
+  content: '!';
+  color: #cca700;
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+}

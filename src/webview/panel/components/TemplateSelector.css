@@ -1,0 +1,40 @@
+.template-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--eda-space-2);
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--eda-space-1);
+  padding: var(--eda-space-3);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-md);
+  background: var(--eda-bg-secondary);
+  color: var(--eda-fg-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.template-card:hover {
+  border-color: var(--eda-accent);
+  background: var(--eda-bg-hover);
+}
+
+.template-icon {
+  font-size: 20px;
+}
+
+.template-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.template-desc {
+  font-size: 11px;
+  color: var(--eda-fg-secondary);
+  line-height: 1.4;
+}

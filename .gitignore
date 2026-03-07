@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.vsix
+.env
+.env.*
+*.map
+.DS_Store
+Thumbs.db
+.vscode-test/
+out/
+*.tgz
+.claude/

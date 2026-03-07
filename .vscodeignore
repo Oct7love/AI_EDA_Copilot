@@ -1,0 +1,15 @@
+.vscode/**
+.vscode-test/**
+src/**
+docs/**
+node_modules/**
+.gitignore
+.env
+.env.example
+tsconfig.json
+tsconfig.webview.json
+esbuild.js
+CLAUDE.md
+progress.txt
+**/*.ts
+**/*.map
