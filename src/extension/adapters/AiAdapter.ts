@@ -31,17 +31,35 @@ export class AiAdapter {
     return this.client;
   }
 
+  /** 分离 system 消息（兼容 Anthropic Messages API 顶层 system 参数） */
+  private separateSystemMessages(messages: AiCompletionParams['messages']) {
+    const systemParts: string[] = [];
+    const nonSystem: { role: 'user' | 'assistant'; content: string }[] = [];
+    for (const m of messages) {
+      if (m.role === 'system') {
+        systemParts.push(m.content);
+      } else {
+        nonSystem.push({ role: m.role as 'user' | 'assistant', content: m.content });
+      }
+    }
+    return { systemPrompt: systemParts.join('\n\n') || undefined, messages: nonSystem };
+  }
+
   /** 流式调用，返回 AsyncGenerator */
   async *stream(params: AiCompletionParams): AsyncGenerator<AiStreamChunk> {
     const client = await this.ensureClient();
+    const { systemPrompt, messages } = this.separateSystemMessages(params.messages);
 
-    const response = await client.chat.completions.create({
+    const body: Record<string, unknown> = {
       model: params.model,
-      messages: params.messages.map(m => ({ role: m.role, content: m.content })),
+      messages,
       temperature: params.temperature ?? 0.3,
       max_tokens: params.maxTokens ?? 4096,
       stream: true,
-    });
+    };
+    if (systemPrompt) body.system = systemPrompt;
+
+    const response = await (client.chat.completions as any).create(body);
 
     for await (const chunk of response) {
       const delta = chunk.choices[0]?.delta;
@@ -59,13 +77,17 @@ export class AiAdapter {
   /** 非流式调用 */
   async complete(params: AiCompletionParams): Promise<string> {
     const client = await this.ensureClient();
+    const { systemPrompt, messages } = this.separateSystemMessages(params.messages);
 
-    const response = await client.chat.completions.create({
+    const body: Record<string, unknown> = {
       model: params.model,
-      messages: params.messages.map(m => ({ role: m.role, content: m.content })),
+      messages,
       temperature: params.temperature ?? 0.3,
       max_tokens: params.maxTokens ?? 4096,
-    });
+    };
+    if (systemPrompt) body.system = systemPrompt;
+
+    const response = await (client.chat.completions as any).create(body);
 
     return response.choices[0]?.message?.content ?? '';
   }

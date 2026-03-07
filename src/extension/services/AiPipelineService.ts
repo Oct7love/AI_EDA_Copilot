@@ -65,7 +65,7 @@ export class AiPipelineService {
       this.sendPanelStatus('requirement', 0);
 
       const config = vscode.workspace.getConfiguration('aiEda');
-      const model = config.get<string>('model', 'claude-sonnet-4-20250514');
+      const model = config.get<string>('model', 'claude-sonnet-4-6');
       const language = config.get<'zh' | 'en'>('reportLanguage', 'zh');
       const inputText = request.rawText ?? '';
 
@@ -130,7 +130,7 @@ export class AiPipelineService {
       this.outputChannel.appendLine('[Pipeline] bom stage started');
 
       const config = vscode.workspace.getConfiguration('aiEda');
-      const model = config.get<string>('model', 'claude-sonnet-4-20250514');
+      const model = config.get<string>('model', 'claude-sonnet-4-6');
       const language = config.get<'zh' | 'en'>('reportLanguage', 'zh');
 
       // AI 生成 BOM
