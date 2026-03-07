@@ -48,3 +48,20 @@ export type {
   RequirementSpec,
   OverviewData,
 } from './artifacts.types';
+
+export type {
+  BOMItem,
+  AlternativePart,
+  ValidationFinding,
+} from './bom.types';
+
+export type {
+  ProcurementItem,
+  ProcurementAlternative,
+} from './procurement.types';
+
+export type {
+  JlcComponent,
+  JlcSearchResponse,
+  JlcSearchParams,
+} from './jlc.types';

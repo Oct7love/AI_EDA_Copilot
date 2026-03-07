@@ -1,0 +1,267 @@
+.proc-root {
+  padding: var(--eda-space-4, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-4, 1.5rem);
+}
+
+.proc-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12rem;
+  color: var(--eda-fg-muted, #888);
+  font-size: 0.875rem;
+}
+
+/* 兼容性概要 */
+.proc-summary {
+  background: var(--eda-bg-secondary, #1e1e1e);
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-md, 6px);
+  padding: var(--eda-space-3, 1rem);
+}
+
+.proc-summary-title {
+  margin: 0 0 var(--eda-space-2, 0.5rem);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--eda-fg-primary, #d4d4d4);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.proc-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.proc-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--eda-space-2, 0.5rem);
+  background: var(--eda-bg-primary, #252526);
+  border-radius: var(--eda-radius-sm, 4px);
+  border-left: 3px solid transparent;
+}
+
+.proc-summary-item--compat-ok { border-left-color: #4ec9b0; }
+.proc-summary-item--compat-partial { border-left-color: #cca700; }
+.proc-summary-item--compat-bad { border-left-color: #f14c4c; }
+.proc-summary-item--compat-unknown { border-left-color: #888; }
+
+.proc-summary-count {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--eda-font-mono, monospace);
+  color: var(--eda-fg-primary, #d4d4d4);
+}
+
+.proc-summary-label {
+  font-size: 0.7rem;
+  color: var(--eda-fg-muted, #888);
+}
+
+/* 器件列表 */
+.proc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.proc-item {
+  background: var(--eda-bg-secondary, #1e1e1e);
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-md, 6px);
+  padding: var(--eda-space-3, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.proc-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.proc-item-info {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-2, 0.5rem);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.proc-designator {
+  font-family: var(--eda-font-mono, monospace);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--eda-fg-primary, #d4d4d4);
+}
+
+.proc-comment {
+  font-size: 0.8125rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+}
+
+.proc-footprint {
+  font-family: var(--eda-font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--eda-fg-muted, #888);
+  padding: 1px 4px;
+  background: var(--eda-bg-primary, #252526);
+  border-radius: 3px;
+}
+
+.proc-item-badges {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-1, 0.25rem);
+  flex-shrink: 0;
+}
+
+.proc-compat-badge {
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.compat-ok { background: rgba(78, 201, 176, 0.15); color: #4ec9b0; border: 1px solid rgba(78, 201, 176, 0.35); }
+.compat-partial { background: rgba(204, 167, 0, 0.15); color: #cca700; border: 1px solid rgba(204, 167, 0, 0.35); }
+.compat-bad { background: rgba(241, 76, 76, 0.15); color: #f14c4c; border: 1px solid rgba(241, 76, 76, 0.35); }
+.compat-unknown { background: rgba(136, 136, 136, 0.15); color: #888; border: 1px solid rgba(136, 136, 136, 0.3); }
+
+.proc-match-type {
+  font-size: 0.6rem;
+  color: var(--eda-fg-muted, #888);
+  padding: 1px 4px;
+  background: var(--eda-bg-primary, #252526);
+  border-radius: 3px;
+  font-family: var(--eda-font-mono, monospace);
+}
+
+/* JLC 信息行 */
+.proc-item-jlc {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.proc-link {
+  color: var(--eda-accent, #007acc);
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: var(--eda-font-mono, monospace);
+  font-size: 0.8125rem;
+}
+
+.proc-link:hover { opacity: 0.8; }
+
+.proc-stock,
+.proc-price {
+  font-size: 0.7rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--eda-bg-primary, #252526);
+  color: var(--eda-fg-secondary, #a0a0a0);
+  font-family: var(--eda-font-mono, monospace);
+}
+
+.proc-smt-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.proc-smt-badge--ready { background: rgba(78, 201, 176, 0.15); color: #4ec9b0; }
+.proc-smt-badge--missing_footprint,
+.proc-smt-badge--missing_part { background: rgba(241, 76, 76, 0.15); color: #f14c4c; }
+.proc-smt-badge--manual_only { background: rgba(204, 167, 0, 0.15); color: #cca700; }
+
+/* 推荐 */
+.proc-recommendation {
+  font-size: 0.75rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+  font-style: italic;
+}
+
+/* 问题标签 */
+.proc-issues {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.proc-issue-tag {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(241, 76, 76, 0.1);
+  color: #f14c4c;
+  border: 1px solid rgba(241, 76, 76, 0.25);
+}
+
+/* 替代件 */
+.proc-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-1, 0.25rem);
+}
+
+.proc-alt-toggle {
+  background: none;
+  border: none;
+  color: var(--eda-accent, #007acc);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 2px 0;
+  text-align: left;
+}
+
+.proc-alt-toggle:hover { text-decoration: underline; }
+
+.proc-alt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.proc-alt-item {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-2, 0.5rem);
+  padding: 3px 6px;
+  background: var(--eda-bg-primary, #252526);
+  border-radius: var(--eda-radius-sm, 4px);
+  font-size: 0.75rem;
+}
+
+.proc-alt-rank {
+  color: var(--eda-fg-muted, #888);
+  font-weight: 600;
+  font-size: 0.65rem;
+}
+
+.proc-alt-comment {
+  color: var(--eda-fg-primary, #d4d4d4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.proc-alt-reason {
+  font-size: 0.7rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+  font-style: italic;
+}

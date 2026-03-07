@@ -1,0 +1,268 @@
+.bom-root {
+  padding: var(--eda-space-4, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-3, 1rem);
+}
+
+.bom-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12rem;
+  color: var(--eda-fg-muted, #888);
+  font-size: 0.875rem;
+}
+
+/* 摘要头部 */
+.bom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bom-stats {
+  display: flex;
+  gap: var(--eda-space-3, 1rem);
+}
+
+.bom-stat {
+  font-size: 0.8125rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+  padding: 2px 8px;
+  background: var(--eda-bg-secondary, #1e1e1e);
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-sm, 4px);
+}
+
+.bom-export-btn {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--eda-fg-primary, #d4d4d4);
+  background: var(--eda-accent, #007acc);
+  border: none;
+  border-radius: var(--eda-radius-sm, 4px);
+  cursor: pointer;
+}
+
+.bom-export-btn:hover {
+  opacity: 0.85;
+}
+
+/* 表格 */
+.bom-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--eda-border, #3c3c3c);
+  border-radius: var(--eda-radius-md, 6px);
+}
+
+.bom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.bom-table thead {
+  background: var(--eda-bg-primary, #252526);
+}
+
+.bom-table th {
+  padding: var(--eda-space-2, 0.5rem) var(--eda-space-3, 1rem);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--eda-fg-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--eda-border, #3c3c3c);
+  white-space: nowrap;
+}
+
+.bom-table td {
+  padding: var(--eda-space-2, 0.5rem) var(--eda-space-3, 1rem);
+  border-bottom: 1px solid var(--eda-border, #3c3c3c);
+  color: var(--eda-fg-primary, #d4d4d4);
+}
+
+.bom-row {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.bom-row:hover {
+  background: var(--eda-bg-hover, #2a2d2e);
+}
+
+.bom-row--expanded {
+  background: var(--eda-bg-hover, #2a2d2e);
+}
+
+.bom-cell-designator {
+  font-family: var(--eda-font-mono, monospace);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bom-cell-comment {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bom-cell-footprint {
+  font-family: var(--eda-font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+}
+
+.bom-cell-qty {
+  text-align: center;
+  font-family: var(--eda-font-mono, monospace);
+}
+
+.bom-lcsc-matched {
+  font-family: var(--eda-font-mono, monospace);
+  color: #4ec9b0;
+  font-weight: 600;
+}
+
+.bom-lcsc-none {
+  color: var(--eda-fg-muted, #888);
+}
+
+/* 展开详情 */
+.bom-detail-row-wrapper td {
+  padding: 0;
+  border-bottom: 2px solid var(--eda-accent, #007acc);
+}
+
+.bom-detail {
+  padding: var(--eda-space-3, 1rem);
+  background: var(--eda-bg-secondary, #1e1e1e);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2, 0.5rem);
+}
+
+.bom-detail-row {
+  display: flex;
+  gap: var(--eda-space-3, 1rem);
+  align-items: flex-start;
+}
+
+.bom-detail-label {
+  flex-shrink: 0;
+  width: 100px;
+  font-size: 0.75rem;
+  color: var(--eda-fg-muted, #888);
+  font-weight: 500;
+}
+
+.bom-detail-value {
+  font-size: 0.8125rem;
+  color: var(--eda-fg-primary, #d4d4d4);
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-2, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.bom-detail-reasoning {
+  font-style: italic;
+  color: var(--eda-fg-secondary, #a0a0a0);
+}
+
+.bom-source-badge {
+  padding: 1px 5px;
+  border-radius: 10px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.bom-source-badge--user {
+  background: rgba(78, 201, 176, 0.15);
+  color: #4ec9b0;
+  border: 1px solid rgba(78, 201, 176, 0.35);
+}
+
+.bom-source-badge--ai {
+  background: rgba(0, 122, 204, 0.15);
+  color: #4da9ef;
+  border: 1px solid rgba(0, 122, 204, 0.35);
+}
+
+.bom-confidence {
+  font-size: 0.7rem;
+  font-family: var(--eda-font-mono, monospace);
+  color: var(--eda-fg-muted, #888);
+}
+
+.bom-link {
+  color: var(--eda-accent, #007acc);
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: var(--eda-font-mono, monospace);
+}
+
+.bom-link:hover {
+  opacity: 0.8;
+}
+
+.bom-stock,
+.bom-price {
+  font-size: 0.7rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--eda-bg-primary, #252526);
+  color: var(--eda-fg-secondary, #a0a0a0);
+  font-family: var(--eda-font-mono, monospace);
+}
+
+/* 替代件 */
+.bom-detail-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-1, 0.25rem);
+  margin-top: var(--eda-space-1, 0.25rem);
+}
+
+.bom-alt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bom-alt-item {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-2, 0.5rem);
+  padding: 3px 6px;
+  background: var(--eda-bg-primary, #252526);
+  border-radius: var(--eda-radius-sm, 4px);
+  font-size: 0.75rem;
+}
+
+.bom-alt-rank {
+  color: var(--eda-fg-muted, #888);
+  font-weight: 600;
+  font-size: 0.65rem;
+}
+
+.bom-alt-comment {
+  color: var(--eda-fg-primary, #d4d4d4);
+}
+
+.bom-alt-footprint {
+  font-family: var(--eda-font-mono, monospace);
+  font-size: 0.7rem;
+  color: var(--eda-fg-muted, #888);
+}
+
+.bom-alt-reason {
+  font-size: 0.7rem;
+  color: var(--eda-fg-secondary, #a0a0a0);
+  font-style: italic;
+}

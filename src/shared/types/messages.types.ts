@@ -19,7 +19,8 @@ export type PanelToExtension =
   | BaseMessage<'select_template', { templateId: string }>
   | BaseMessage<'open_report', { projectId: string; schemeId: string }>
   | BaseMessage<'switch_mode', { mode: 'chat' | 'form' }>
-  | BaseMessage<'regenerate', { projectId: string; schemeId: string; feedback: string }>;
+  | BaseMessage<'regenerate', { projectId: string; schemeId: string; feedback: string }>
+  | BaseMessage<'start_bom', void>;
 
 // ─── Extension → 侧边栏 ─────────────────────────────
 
@@ -35,7 +36,9 @@ export type ExtensionToReport =
   | BaseMessage<'report_data', { report: unknown; isStreaming: boolean }>
   | BaseMessage<'report_stream_chunk', { section: ReportSection; content: string }>
   | BaseMessage<'report_stream_end', { report: unknown }>
-  | BaseMessage<'comparison_data', { schemes: unknown[] }>;
+  | BaseMessage<'comparison_data', { schemes: unknown[] }>
+  | BaseMessage<'bom_data', { bomItems: unknown[]; isStreaming: boolean }>
+  | BaseMessage<'procurement_data', { procurementItems: unknown[] }>;
 
 // ─── 报告页 → Extension ──────────────────────────────
 
@@ -43,7 +46,8 @@ export type ReportToExtension =
   | BaseMessage<'export_request', { format: 'csv' | 'markdown' | 'json'; section?: ReportSection }>
   | BaseMessage<'open_external_link', { url: string }>
   | BaseMessage<'requirement_edit', { field: string; value: unknown }>
-  | BaseMessage<'version_request', { projectId: string; version: number }>;
+  | BaseMessage<'version_request', { projectId: string; version: number }>
+  | BaseMessage<'bom_export', void>;
 
 // ─── 工具函数类型 ────────────────────────────────────
 

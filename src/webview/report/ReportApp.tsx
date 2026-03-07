@@ -5,6 +5,8 @@ import vscodeApi from '../shared/vscodeApi';
 import { useReportStore } from './store/reportStore';
 import { OverviewSection } from './components/OverviewSection';
 import { RequirementsSection } from './components/RequirementsSection';
+import { BomSection } from './components/BomSection';
+import { ProcurementSection } from './components/ProcurementSection';
 import './ReportApp.css';
 
 const TABS: { id: ReportSection; label: string }[] = [
@@ -18,7 +20,10 @@ const TABS: { id: ReportSection; label: string }[] = [
 
 export function ReportApp(): React.ReactElement {
   const [activeTab, setActiveTab] = React.useState<ReportSection>('overview');
-  const { setRequirementSpec, setOverview, appendStreamContent, setIsStreaming, streamContent } = useReportStore();
+  const {
+    setRequirementSpec, setOverview, setBomItems, setProcurementItems,
+    appendStreamContent, setIsStreaming, streamContent,
+  } = useReportStore();
 
   useEffect(() => {
     const handler = (event: MessageEvent<ExtensionToReport>) => {
@@ -34,6 +39,16 @@ export function ReportApp(): React.ReactElement {
           setIsStreaming(false);
           break;
         }
+        case 'bom_data': {
+          const bomPayload = msg.payload as { bomItems?: unknown[] };
+          if (bomPayload.bomItems) setBomItems(bomPayload.bomItems as any);
+          break;
+        }
+        case 'procurement_data': {
+          const procPayload = msg.payload as { procurementItems?: unknown[] };
+          if (procPayload.procurementItems) setProcurementItems(procPayload.procurementItems as any);
+          break;
+        }
         case 'report_stream_end':
           setIsStreaming(false);
           break;
@@ -41,7 +56,7 @@ export function ReportApp(): React.ReactElement {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [setRequirementSpec, setOverview, appendStreamContent, setIsStreaming]);
+  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, appendStreamContent, setIsStreaming]);
 
   const handleExport = (format: 'csv' | 'markdown' | 'json') => {
     const message: ReportToExtension = createMessage('export_request', 'report', { format, section: activeTab });
@@ -54,6 +69,10 @@ export function ReportApp(): React.ReactElement {
         return <OverviewSection />;
       case 'requirements':
         return <RequirementsSection />;
+      case 'bom':
+        return <BomSection />;
+      case 'procurement':
+        return <ProcurementSection />;
       default:
         return (
           <div className="section-placeholder">

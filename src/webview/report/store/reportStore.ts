@@ -1,17 +1,20 @@
 import { create } from 'zustand';
-import type { RequirementSpec, OverviewData } from '../../../shared/types';
+import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem } from '../../../shared/types';
 
 interface ReportState {
   requirementSpec: RequirementSpec | null;
   overview: OverviewData | null;
+  bomItems: BOMItem[];
+  procurementItems: ProcurementItem[];
   streamContent: string;
   isStreaming: boolean;
 
-  // 编辑状态：field key → 编辑中的值（受控内存态，不影响原始 spec）
   editingFields: Record<string, string>;
 
   setRequirementSpec: (spec: RequirementSpec) => void;
   setOverview: (data: OverviewData) => void;
+  setBomItems: (items: BOMItem[]) => void;
+  setProcurementItems: (items: ProcurementItem[]) => void;
   setStreamContent: (content: string) => void;
   appendStreamContent: (chunk: string) => void;
   setIsStreaming: (v: boolean) => void;
@@ -23,12 +26,16 @@ interface ReportState {
 export const useReportStore = create<ReportState>((set) => ({
   requirementSpec: null,
   overview: null,
+  bomItems: [],
+  procurementItems: [],
   streamContent: '',
   isStreaming: false,
   editingFields: {},
 
   setRequirementSpec: (spec) => set({ requirementSpec: spec }),
   setOverview: (data) => set({ overview: data }),
+  setBomItems: (items) => set({ bomItems: items }),
+  setProcurementItems: (items) => set({ procurementItems: items }),
   setStreamContent: (content) => set({ streamContent: content }),
   appendStreamContent: (chunk) => set((s) => ({ streamContent: s.streamContent + chunk })),
   setIsStreaming: (v) => set({ isStreaming: v }),
@@ -41,5 +48,8 @@ export const useReportStore = create<ReportState>((set) => ({
       return { editingFields: next };
     }),
   reset: () =>
-    set({ requirementSpec: null, overview: null, streamContent: '', isStreaming: false, editingFields: {} }),
+    set({
+      requirementSpec: null, overview: null, bomItems: [], procurementItems: [],
+      streamContent: '', isStreaming: false, editingFields: {},
+    }),
 }));

@@ -105,8 +105,58 @@
 - [x] ReportApp.tsx 改造：引入 reportStore + Overview/Requirements 组件渲染
 - [x] 编译通过 + .vsix 打包（9 files, 230.6 KB）
 
-### 下一步：Phase 4 — BOM + 采购 MVP
-- BOM 生成 prompt + 解析器
-- JlcAdapter（JLCPCB API + jlcsearch fallback）
-- ProcurementService
-- BOM 表格组件 + CSV 导出
+### Phase 4 — BOM + 采购 MVP ✅
+- [x] BOM 领域类型（shared/types/bom.types.ts）
+  - BOMItem 对齐 BACKEND_STRUCTURE §4.3（designator/comment/footprint/quantity + JLC 集成 + AI 标注 + 替代件）
+  - AlternativePart / ValidationFinding
+- [x] 采购领域类型（shared/types/procurement.types.ts）
+  - ProcurementItem 对齐 §4.6（jlcCompatibility / matchType / smtReadiness / alternatives）
+  - ProcurementAlternative
+- [x] jlcsearch API 类型（shared/types/jlc.types.ts）
+  - JlcComponent / JlcSearchResponse / JlcSearchParams
+- [x] BOM 生成 Prompt（extension/prompts/bomPrompt.ts）
+  - specToContext() 序列化 RequirementSpec → prompt 上下文
+  - buildBomPrompt() 支持 zh/en 语言配置
+  - 详细规则：designator 前缀、去耦电容、标准封装、替代件
+- [x] JlcAdapter（extension/adapters/JlcAdapter.ts）
+  - jlcsearch API 封装（https://jlcsearch.tscircuit.com/api/search）
+  - 8s 超时 + abort 控制器
+  - productUrl() 生成立创商城链接
+- [x] ProcurementService（extension/services/ProcurementService.ts）
+  - matchAll() 串行匹配 + 100ms 礼貌间隔 + 进度回调
+  - matchSingle() 封装匹配优先 → exact / footprint_compatible / functionally_similar
+  - 回填 BOMItem JLC 字段（jlcPartNumber / jlcProductUrl / jlcStock / jlcPrice）
+  - 替代件列表（最多 3 个）
+- [x] CSV 导出（extension/export/bomCsvExporter.ts）
+  - 对齐嘉立创 SMT 模板：Comment, Designator, Footprint, LCSC Part #
+  - vscode.workspace.fs 写文件
+- [x] AiPipelineService 扩展
+  - runBomStage() BOM 生成 + 采购匹配管线
+  - parseBomItems() JSON 解析 + 修复
+  - requirement 完成后自动串联 BOM 阶段
+  - lastSpec / lastBomItems 缓存
+- [x] 消息协议扩展（messages.types.ts）
+  - PanelToExtension: start_bom
+  - ExtensionToReport: bom_data / procurement_data
+  - ReportToExtension: bom_export
+- [x] activate.ts 路由扩展（bom_export → CSV 导出）
+- [x] reportStore 扩展（bomItems / procurementItems 状态 + setter）
+- [x] BomSection（report/components/BomSection.tsx + .css）
+  - 摘要统计 + 导出按钮
+  - 5 列表格（Designator / Comment / Footprint / Qty / LCSC Part #）
+  - 行点击展开详情（BomRowDetail）
+- [x] BomRowDetail（report/components/BomRowDetail.tsx）
+  - 描述 / 分类 / 制造商 / AI 标注 / JLC 信息 / 替代件
+  - 立创链接可点击跳转
+- [x] ProcurementSection（report/components/ProcurementSection.tsx + .css）
+  - 兼容性概要（compatible / partial / incompatible / unknown 四色统计）
+  - 器件卡片：兼容性徽章 + 匹配类型 + JLC 信息 + SMT 状态
+  - 替代件折叠展开
+- [x] ReportApp.tsx 改造：bom / procurement tab 渲染 + 消息处理
+- [x] 编译通过 + .vsix 打包（9 files, 236.29 KB）
+
+### 下一步：Phase 5 — 原理图 + PCB
+- SchematicIntent 类型 + prompt
+- 模块级 Mermaid 框图
+- 引脚连接表
+- PCBLayoutPlan

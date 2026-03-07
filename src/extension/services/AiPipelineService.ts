@@ -1,16 +1,24 @@
 import * as vscode from 'vscode';
-import type { AnalysisRequest, RequirementSpec, OverviewData } from '@shared/types';
+import type { AnalysisRequest, RequirementSpec, OverviewData, BOMItem } from '@shared/types';
+import type { PipelineStage } from '@shared/types';
 import { RETRYABLE_ERRORS, createRetryState } from '@shared/types';
 import type { AiErrorCode } from '@shared/types';
 import { AiAdapter, AiAdapterError, classifyError } from '../adapters/AiAdapter';
 import { StreamBuffer } from './StreamBuffer';
 import { buildRequirementPrompt } from '../prompts/requirementPrompt';
+import { buildBomPrompt } from '../prompts/bomPrompt';
+import { ProcurementService } from './ProcurementService';
 import type { SidePanelProvider } from '../providers/SidePanelProvider';
 import { ReportPanelManager } from '../providers/ReportPanelManager';
 
 export class AiPipelineService {
   private isRunning = false;
   private readonly adapter: AiAdapter;
+  private readonly procurement = new ProcurementService();
+  /** 上一次需求分析结果（后续阶段消费） */
+  lastSpec: RequirementSpec | null = null;
+  /** 上一次 BOM 结果（导出消费） */
+  lastBomItems: BOMItem[] = [];
 
   constructor(
     private readonly secrets: vscode.SecretStorage,
@@ -90,16 +98,21 @@ export class AiPipelineService {
         timestamp: Date.now(),
       });
 
+      // 缓存 spec 供 BOM 阶段使用
+      this.lastSpec = spec;
+
       // 完成通知
       this.panelProvider.postMessage({
         type: 'ai_chat_response',
         source: 'extension',
-        payload: { content: '需求分析完成，请查看 Report 面板。', isStreaming: false },
+        payload: { content: '需求分析完成，开始 BOM 选型...', isStreaming: false },
         timestamp: Date.now(),
       });
       this.sendPanelStatus('requirement', 100);
-
       this.outputChannel.appendLine('[Pipeline] requirement stage completed');
+
+      // 自动串联 BOM 阶段
+      await this.runBomStage(spec);
     } catch (err) {
       const code = err instanceof AiAdapterError ? err.code : classifyError(err);
       const msg = err instanceof Error ? err.message : String(err);
@@ -108,6 +121,107 @@ export class AiPipelineService {
     } finally {
       this.isRunning = false;
     }
+  }
+
+  /** BOM 生成 + 采购匹配阶段 */
+  async runBomStage(spec: RequirementSpec): Promise<void> {
+    try {
+      this.sendPanelStatus('bom', 0);
+      this.outputChannel.appendLine('[Pipeline] bom stage started');
+
+      const config = vscode.workspace.getConfiguration('aiEda');
+      const model = config.get<string>('model', 'claude-sonnet-4-20250514');
+      const language = config.get<'zh' | 'en'>('reportLanguage', 'zh');
+
+      // AI 生成 BOM
+      const messages = buildBomPrompt(spec, language);
+      const fullText = await this.streamWithRetry(model, messages);
+
+      this.sendPanelStatus('bom', 50);
+      const bomItems = this.parseBomItems(fullText);
+
+      if (!bomItems || bomItems.length === 0) {
+        this.sendPanelError('PARSE_ERROR', 'BOM JSON 解析失败');
+        return;
+      }
+
+      this.outputChannel.appendLine(`[Pipeline] parsed ${bomItems.length} BOM items`);
+
+      // JLC 料号匹配
+      this.sendPanelStatus('procurement', 0);
+      this.panelProvider.postMessage({
+        type: 'ai_chat_response',
+        source: 'extension',
+        payload: { content: `正在匹配 ${bomItems.length} 个元器件的 JLCPCB 料号...`, isStreaming: false },
+        timestamp: Date.now(),
+      });
+
+      const procItems = await this.procurement.matchAll(bomItems, (cur, total) => {
+        this.sendPanelStatus('procurement', Math.round((cur / total) * 100));
+      });
+
+      // 缓存 BOM 供导出
+      this.lastBomItems = bomItems;
+
+      // 推送到 Report Tab
+      ReportPanelManager.postMessage({
+        type: 'bom_data',
+        source: 'extension',
+        payload: { bomItems, isStreaming: false },
+        timestamp: Date.now(),
+      });
+
+      ReportPanelManager.postMessage({
+        type: 'procurement_data',
+        source: 'extension',
+        payload: { procurementItems: procItems },
+        timestamp: Date.now(),
+      });
+
+      this.panelProvider.postMessage({
+        type: 'ai_chat_response',
+        source: 'extension',
+        payload: { content: `BOM 选型完成（${bomItems.length} 项），采购匹配已更新。`, isStreaming: false },
+        timestamp: Date.now(),
+      });
+      this.sendPanelStatus('bom', 100);
+      this.outputChannel.appendLine('[Pipeline] bom + procurement stage completed');
+    } catch (err) {
+      const code = err instanceof AiAdapterError ? err.code : classifyError(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      this.outputChannel.appendLine(`[Pipeline] bom error: ${code} — ${msg}`);
+      this.sendPanelError(code, msg);
+    }
+  }
+
+  /** 解析 AI 输出的 BOMItem[] JSON */
+  private parseBomItems(text: string): BOMItem[] | null {
+    const parse = (raw: string): BOMItem[] | null => {
+      try {
+        const parsed = JSON.parse(raw);
+        const items = Array.isArray(parsed) ? parsed : parsed.bomItems ?? parsed.bom ?? null;
+        if (!Array.isArray(items)) return null;
+        // 补充默认字段
+        for (const item of items) {
+          item.alternatives = item.alternatives ?? [];
+          item.validationFindings = item.validationFindings ?? [];
+          item.status = item.status ?? 'pending_confirmation';
+        }
+        return items as BOMItem[];
+      } catch {
+        return null;
+      }
+    };
+
+    const json = this.extractJson(text);
+    const result = parse(json);
+    if (result) return result;
+
+    this.outputChannel.appendLine('[Pipeline] BOM JSON parse failed, attempting repair');
+    let repaired = json;
+    repaired = repaired.replace(/,\s*([\]}])/g, '$1');
+    repaired = repaired.replace(/'/g, '"');
+    return parse(repaired);
   }
 
   /** 带重试的流式调用，返回完整文本 */
@@ -296,7 +410,7 @@ export class AiPipelineService {
 
   // ── 辅助方法 ──
 
-  private sendPanelStatus(stage: 'requirement', progress: number): void {
+  private sendPanelStatus(stage: PipelineStage, progress: number): void {
     this.panelProvider.postMessage({
       type: 'generation_status',
       source: 'extension',

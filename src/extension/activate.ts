@@ -3,6 +3,7 @@ import { SidePanelProvider } from './providers/SidePanelProvider';
 import { ReportPanelManager } from './providers/ReportPanelManager';
 import { InputService } from './services/InputService';
 import { AiPipelineService } from './services/AiPipelineService';
+import { exportBomCsv } from './export/bomCsvExporter';
 import { registerCommands } from './commands';
 
 const EXTENSION_ID = 'ai-eda-copilot';
@@ -65,11 +66,18 @@ export function activate(context: vscode.ExtensionContext): void {
     switch (message.type) {
       case 'export_request':
         vscode.window.showInformationMessage(
-          `Export ${message.payload.format} — coming in Phase 4/7`
+          `Export ${message.payload.format} — coming in Phase 7`
         );
         break;
       case 'open_external_link':
         vscode.env.openExternal(vscode.Uri.parse(message.payload.url));
+        break;
+      case 'bom_export':
+        if (pipeline.lastBomItems.length > 0) {
+          exportBomCsv(pipeline.lastBomItems);
+        } else {
+          vscode.window.showWarningMessage('暂无 BOM 数据，请先运行分析');
+        }
         break;
     }
   });
