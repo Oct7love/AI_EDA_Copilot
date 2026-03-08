@@ -155,6 +155,18 @@
 - [x] ReportApp.tsx 改造：bom / procurement tab 渲染 + 消息处理
 - [x] 编译通过 + .vsix 打包（9 files, 236.29 KB）
 
+## 2026-03-08
+
+### Bug 修复 — API 兼容性 ✅
+- [x] AiAdapter 兼容 Anthropic Messages API 格式
+  - 新增 separateSystemMessages()：提取 system 消息到顶层 system 参数
+  - stream() / complete() 均改用动态 body 构建，system 仅在存在时注入
+  - 解决 willapi.one 转发 Claude 请求时 400 "Unexpected role system" 错误
+- [x] 默认模型名修正
+  - package.json / AiPipelineService：claude-sonnet-4-20250514 → claude-sonnet-4-6
+  - 解决 willapi.one 503 "No available channel" 错误
+- [x] 编译通过 + .vsix 打包（9 files, 236.35 KB）
+
 ### 下一步：Phase 5 — 原理图 + PCB
 - SchematicIntent 类型 + prompt
 - 模块级 Mermaid 框图
