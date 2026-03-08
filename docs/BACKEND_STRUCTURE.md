@@ -802,7 +802,7 @@ interface AiCompletionParams {
   model: string;
   messages: AiMessage[];
   temperature?: number;
-  maxTokens?: number;
+  maxTokens?: number;       // 默认 16384（BOM 输出可达 20KB+）
 }
 
 interface AiStreamChunk {
@@ -811,7 +811,7 @@ interface AiStreamChunk {
 }
 ```
 
-当前实现基于 `openai` SDK + 用户配置的 Base URL。若中转站协议变更，仅需替换 `AiAdapter` 实现。
+当前实现基于 `openai` SDK + 用户配置的 Base URL。构造函数接受可选 `log` 回调用于诊断日志输出。`separateSystemMessages()` 将 `role: "system"` 消息提取为顶层 `system` 参数，兼容 Anthropic Messages API 格式的中转站。若中转站协议变更，仅需替换 `AiAdapter` 实现。
 
 ### 10.3 JlcAdapter
 

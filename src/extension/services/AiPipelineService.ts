@@ -26,7 +26,7 @@ export class AiPipelineService {
     private readonly outputChannel: vscode.OutputChannel,
     private readonly panelProvider: SidePanelProvider,
   ) {
-    this.adapter = new AiAdapter(secrets);
+    this.adapter = new AiAdapter(secrets, (msg) => this.outputChannel.appendLine(msg));
   }
 
   /** 检查并引导用户配置 API Key */
@@ -75,6 +75,9 @@ export class AiPipelineService {
 
       // 带重试的流式调用
       const fullText = await this.streamWithRetry(model, messages);
+
+      // 诊断日志：打印 AI 原始输出
+      this.outputChannel.appendLine(`[Pipeline] fullText length=${fullText.length}, preview=${fullText.slice(0, 500)}`);
 
       // 解析 JSON
       this.sendPanelStatus('requirement', 80);
@@ -214,6 +217,7 @@ export class AiPipelineService {
     };
 
     const json = this.extractJson(text);
+    this.outputChannel.appendLine(`[Pipeline] BOM extractJson length=${json.length}, start=${json.slice(0, 200)}, end=${json.slice(-200)}`);
     const result = parse(json);
     if (result) return result;
 
@@ -335,15 +339,24 @@ export class AiPipelineService {
     return null;
   }
 
-  /** 提取 JSON 块：支持 ```json ``` 包裹 */
+  /** 提取 JSON 块：支持 ```json ``` 包裹、对象 {} 和数组 [] */
   private extractJson(text: string): string {
     const fenced = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
     if (fenced) return fenced[1].trim();
 
-    // 寻找第一个 { 到最后一个 } 的范围
-    const start = text.indexOf('{');
-    const end = text.lastIndexOf('}');
-    if (start !== -1 && end > start) return text.slice(start, end + 1);
+    // 同时检测 { 和 [ 的起始位置，取最早出现的
+    const objStart = text.indexOf('{');
+    const arrStart = text.indexOf('[');
+
+    if (arrStart !== -1 && (objStart === -1 || arrStart < objStart)) {
+      const arrEnd = text.lastIndexOf(']');
+      if (arrEnd > arrStart) return text.slice(arrStart, arrEnd + 1);
+    }
+
+    if (objStart !== -1) {
+      const objEnd = text.lastIndexOf('}');
+      if (objEnd > objStart) return text.slice(objStart, objEnd + 1);
+    }
 
     return text.trim();
   }

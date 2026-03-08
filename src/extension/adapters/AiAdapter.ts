@@ -7,7 +7,10 @@ export class AiAdapter {
   private cachedBaseUrl = '';
   private cachedApiKey = '';
 
-  constructor(private readonly secrets: vscode.SecretStorage) {}
+  constructor(
+    private readonly secrets: vscode.SecretStorage,
+    private readonly log?: (msg: string) => void,
+  ) {}
 
   /** 懒初始化，检测配置变更时重建客户端 */
   private async ensureClient(): Promise<OpenAI> {
@@ -54,14 +57,20 @@ export class AiAdapter {
       model: params.model,
       messages,
       temperature: params.temperature ?? 0.3,
-      max_tokens: params.maxTokens ?? 4096,
+      max_tokens: params.maxTokens ?? 16384,
       stream: true,
     };
     if (systemPrompt) body.system = systemPrompt;
 
     const response = await (client.chat.completions as any).create(body);
+    this.log?.(`[AiAdapter] response type=${typeof response}, constructor=${response?.constructor?.name}`);
 
+    let chunkIndex = 0;
     for await (const chunk of response) {
+      if (chunkIndex < 3) {
+        this.log?.(`[AiAdapter] chunk[${chunkIndex}]: ${JSON.stringify(chunk).slice(0, 800)}`);
+      }
+      chunkIndex++;
       const delta = chunk.choices[0]?.delta;
       if (delta?.content) {
         yield {
@@ -72,6 +81,7 @@ export class AiAdapter {
         yield { content: '', finishReason: chunk.choices[0].finish_reason };
       }
     }
+    this.log?.(`[AiAdapter] stream done, total chunks=${chunkIndex}`);
   }
 
   /** 非流式调用 */
@@ -83,7 +93,7 @@ export class AiAdapter {
       model: params.model,
       messages,
       temperature: params.temperature ?? 0.3,
-      max_tokens: params.maxTokens ?? 4096,
+      max_tokens: params.maxTokens ?? 16384,
     };
     if (systemPrompt) body.system = systemPrompt;
 

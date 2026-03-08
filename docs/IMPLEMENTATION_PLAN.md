@@ -725,7 +725,7 @@ src/
 |------|------|
 | 开发方式 | 独立 worktree |
 | 手动验收 | API Key 配置引导、流式输出、结构化渲染、错误处理 |
-| 自动测试 | StreamBuffer 单元测试、JSON 解析/修复测试、deriveOverview 测试 |
+| 自动测试 | StreamBuffer 单元测试、JSON 解析/修复测试（含对象 `{}` 和数组 `[]` 两种格式）、deriveOverview 测试 |
 | Service 层 | AiAdapter mock 测试、AiPipelineService 阶段测试 |
 | 消息协议 | 验证 ExtensionToPanel / ExtensionToReport 消息格式 |
 

@@ -167,6 +167,20 @@
   - 解决 willapi.one 503 "No available channel" 错误
 - [x] 编译通过 + .vsix 打包（9 files, 236.35 KB）
 
+### Bug 修复 — BOM 解析 + 流式诊断 ✅
+- [x] extractJson 支持 JSON 数组 [] 提取
+  - AI 输出 BOM 为 [...] 数组，原 extractJson 仅检测 {}，丢失外层 [] 导致 parse 失败
+  - 新增 [ / ] 起始检测逻辑，优先按最早出现的定界符提取
+- [x] max_tokens 默认值 4096 → 16384
+  - BOM JSON（41 项元器件，~21KB）超出 4096 token 上限被截断
+  - 需求分析 + BOM 生成均使用新默认值
+- [x] AiAdapter 新增 log 回调 + 流式诊断日志
+  - 构造函数接受可选 log 回调（输出到 OutputChannel）
+  - stream() 打印 response 类型 + 前 3 个 chunk + 总 chunk 数
+  - 辅助定位流式传输问题
+- [x] 全管线跑通验证：需求分析 → BOM（41 项）→ 采购匹配 ✅
+- [x] 编译通过 + .vsix 打包（9 files, 236.55 KB）
+
 ### 下一步：Phase 5 — 原理图 + PCB
 - SchematicIntent 类型 + prompt
 - 模块级 Mermaid 框图
