@@ -1,0 +1,322 @@
+.pcb-root {
+  padding: var(--space-4);
+}
+
+.pcb-empty {
+  color: var(--vscode-descriptionForeground);
+  text-align: center;
+  padding: var(--space-6);
+}
+
+.pcb-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--vscode-foreground);
+}
+
+/* 板级参数 */
+.pcb-params {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.pcb-param-card {
+  flex: 1;
+  min-width: 180px;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.param-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 2px;
+}
+
+.param-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.param-meta {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.param-source {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.param-source--user_provided { background: #2ecc7122; color: #2ecc71; }
+.param-source--ai_inferred { background: #f39c1222; color: #f39c12; }
+
+.param-pending {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #e74c3c22;
+  color: #e74c3c;
+}
+
+.param-reasoning {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  margin-top: var(--space-1);
+}
+
+/* 分区图 */
+.pcb-zone-map {
+  border: 2px solid var(--vscode-panel-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.pcb-board-label {
+  text-align: center;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: var(--space-2);
+}
+
+.pcb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 4px;
+  min-height: 200px;
+}
+
+.pcb-zone-cell {
+  border: 2px solid;
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+
+.zone-name {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.zone-components {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.zone-comp-tag {
+  font-size: 10px;
+  font-family: monospace;
+  background: var(--vscode-textCodeBlock-background);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.zone-comp-more {
+  font-size: 10px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* 分区详情 */
+.pcb-zone-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.zone-detail-card {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  font-size: 13px;
+  padding: var(--space-1) 0;
+}
+
+.zone-position {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  font-family: monospace;
+}
+
+.zone-purpose {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  margin: 0;
+}
+
+/* 约束 */
+.pcb-constraints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.constraint-card {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  border-left: 3px solid;
+}
+
+.constraint-card--keep_out { border-left-color: #e74c3c; }
+.constraint-card--placement { border-left-color: #3498db; }
+.constraint-card--routing { border-left-color: #2ecc71; }
+.constraint-card--thermal { border-left-color: #f39c12; }
+.constraint-card--clearance { border-left-color: #9b59b6; }
+
+.constraint-header {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.constraint-type {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.constraint-ref {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+.constraint-desc {
+  font-size: 13px;
+  margin: var(--space-1) 0;
+}
+
+.constraint-components {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.constraint-comp {
+  font-size: 11px;
+  font-family: monospace;
+  background: var(--vscode-textCodeBlock-background);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+/* 走线指南 */
+.pcb-routing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.routing-card {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.routing-header {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.routing-net {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.routing-category {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.routing-category--power { background: #e74c3c22; color: #e74c3c; }
+.routing-category--signal { background: #3498db22; color: #3498db; }
+.routing-category--differential { background: #9b59b622; color: #9b59b6; }
+.routing-category--analog { background: #f39c1222; color: #f39c12; }
+
+.routing-severity {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.routing-severity--mandatory {
+  background: #e74c3c22;
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.routing-severity--recommended {
+  background: #2ecc7122;
+  color: #2ecc71;
+}
+
+.routing-guideline {
+  font-size: 13px;
+  margin: var(--space-1) 0 0;
+}
+
+/* 元件布局表 */
+.pcb-placements-wrapper {
+  overflow-x: auto;
+}
+
+.pcb-placements-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pcb-placements-table th {
+  text-align: left;
+  padding: 6px 8px;
+  background: var(--vscode-editor-background);
+  border-bottom: 2px solid var(--vscode-panel-border);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+}
+
+.pcb-placements-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.placement-des {
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.placement-priority {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.placement-priority--critical { background: #e74c3c22; color: #e74c3c; }
+.placement-priority--important { background: #f39c1222; color: #f39c12; }
+.placement-priority--flexible { background: #2ecc7122; color: #2ecc71; }
+
+.placement-notes {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+}

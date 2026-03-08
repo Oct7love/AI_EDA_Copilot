@@ -1,4 +1,9 @@
 import type { PipelineStage, ReportSection } from './pipeline.types';
+import type { RequirementSpec, OverviewData } from './artifacts.types';
+import type { BOMItem } from './bom.types';
+import type { ProcurementItem } from './procurement.types';
+import type { SchematicIntent } from './schematic.types';
+import type { PCBLayoutPlan } from './pcb.types';
 
 /** 消息方向标识 */
 export type MessageSource = 'panel' | 'report' | 'extension';
@@ -33,12 +38,14 @@ export type ExtensionToPanel =
 // ─── Extension → 报告页 ──────────────────────────────
 
 export type ExtensionToReport =
-  | BaseMessage<'report_data', { report: unknown; isStreaming: boolean }>
+  | BaseMessage<'report_data', { report: { requirementSpec: RequirementSpec; overview: OverviewData }; isStreaming: boolean }>
   | BaseMessage<'report_stream_chunk', { section: ReportSection; content: string }>
-  | BaseMessage<'report_stream_end', { report: unknown }>
-  | BaseMessage<'comparison_data', { schemes: unknown[] }>
-  | BaseMessage<'bom_data', { bomItems: unknown[]; isStreaming: boolean }>
-  | BaseMessage<'procurement_data', { procurementItems: unknown[] }>;
+  | BaseMessage<'report_stream_end', { report: unknown }>  // 未来流式结束回传，结构待定
+  | BaseMessage<'comparison_data', { schemes: unknown[] }>  // Phase 7 方案对比，结构待定
+  | BaseMessage<'bom_data', { bomItems: BOMItem[]; isStreaming: boolean }>
+  | BaseMessage<'procurement_data', { procurementItems: ProcurementItem[] }>
+  | BaseMessage<'schematic_data', { schematicIntent: SchematicIntent }>
+  | BaseMessage<'pcb_layout_data', { pcbLayoutPlan: PCBLayoutPlan }>;
 
 // ─── 报告页 → Extension ──────────────────────────────
 

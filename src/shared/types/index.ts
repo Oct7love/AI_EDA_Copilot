@@ -65,3 +65,20 @@ export type {
   JlcSearchResponse,
   JlcSearchParams,
 } from './jlc.types';
+
+export type {
+  SchematicIntent,
+  SchematicModule,
+  ConnectionSpec,
+  PinRef,
+  NetworkCategory,
+  PinConnection,
+} from './schematic.types';
+
+export type {
+  PCBLayoutPlan,
+  LayoutZone,
+  ComponentPlacement,
+  RoutingGuideline,
+  LayoutConstraint,
+} from './pcb.types';

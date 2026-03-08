@@ -186,8 +186,95 @@
 - [x] APP_FLOW.md 新增 §2.9（新需求验收流程）+ §3.4（开发验收用例 DEV-001~DEV-005）
 - [x] CLAUDE.md 新增 §15.3（代码可维护性纪律 + AI 代码审查清单），原 §15.3 文档同步纪律顺延为 §15.4
 
-### 下一步：Phase 5 — 原理图 + PCB
-- SchematicIntent 类型 + prompt
-- 模块级 Mermaid 框图
-- 引脚连接表
-- PCBLayoutPlan
+### Phase 5 — 原理图意图 + PCB 布局规划 ✅
+- [x] 共享类型定义
+  - schematic.types.ts：SchematicIntent / SchematicModule / ConnectionSpec / PinRef / NetworkCategory / PinConnection
+  - pcb.types.ts：PCBLayoutPlan / LayoutZone / ComponentPlacement / RoutingGuideline / LayoutConstraint
+  - index.ts + messages.types.ts re-export 扩展（schematic_data / pcb_layout_data）
+- [x] AI Prompt 层
+  - schematicPrompt.ts：模块级连接描述 + Mermaid 框图 + 引脚表 JSON 输出
+  - pcbLayoutPrompt.ts：板级分区 + 元件布局 + 走线指南 + 约束 JSON 输出
+- [x] AiPipelineService 扩展
+  - runSchematicStage()：RequirementSpec + BOMItem[] → SchematicIntent
+  - runPcbLayoutStage()：+ SchematicIntent → PCBLayoutPlan
+  - parseJsonArtifact<T>() 泛型解析器（复用 extractJson + JSON 修复）
+  - lastSchematic 缓存 + BOM→Schematic→PCB 自动串联
+- [x] Report Store 扩展（schematicIntent / pcbLayoutPlan 状态 + setter）
+- [x] 原理图展示组件
+  - SchematicSection.tsx + .css：三视图切换（文字描述 / 模块框图 / 引脚连接表）+ 摘要统计
+  - SchematicTextView.tsx：模块卡片 + 网络分类 + 连接列表
+  - MermaidRenderer.tsx：Mermaid 源码格式化展示（MVP，未加载 CDN）
+  - PinConnectionTable.tsx：引脚表 + 方向过滤器 + 色彩徽章
+- [x] PCB 布局展示组件
+  - PcbLayoutSection.tsx + .css：板参数 + 分区图 + 约束卡片 + 走线指南 + 元件布局表
+  - PcbZoneMap.tsx：CSS Grid 3×3 分区可视化 + 色彩映射
+- [x] ReportApp.tsx 改造：导入新组件 + 消息处理 + tab 渲染
+- [x] 编译通过 + .vsix 打包（9 files, 242.89 KB）
+
+**设计决策**：
+- Mermaid 渲染采用 KISS 方案（源码展示），避免 CSP `script-src 'nonce-${nonce}'` 与 CDN 冲突
+- parseJsonArtifact<T>() 泛型解析器统一 requirement/bom/schematic/pcb 四阶段 JSON 解析
+- 全管线一键到底：requirement → BOM → procurement → schematic → pcb_layout 自动串联
+
+**可逆性评估**（若删除 Phase 5 功能，需改哪些文件）：
+
+| 操作 | 文件 | 改动 |
+|------|------|------|
+| 删除 | `src/shared/types/schematic.types.ts` | 整文件 |
+| 删除 | `src/shared/types/pcb.types.ts` | 整文件 |
+| 删除 | `src/extension/prompts/schematicPrompt.ts` | 整文件 |
+| 删除 | `src/extension/prompts/pcbLayoutPrompt.ts` | 整文件 |
+| 删除 | `src/webview/report/components/SchematicSection.tsx` + `.css` | 整文件 |
+| 删除 | `src/webview/report/components/SchematicTextView.tsx` | 整文件 |
+| 删除 | `src/webview/report/components/PinConnectionTable.tsx` | 整文件 |
+| 删除 | `src/webview/report/components/MermaidRenderer.tsx` | 整文件 |
+| 删除 | `src/webview/report/components/PcbLayoutSection.tsx` + `.css` | 整文件 |
+| 删除 | `src/webview/report/components/PcbZoneMap.tsx` | 整文件 |
+| 回退 | `src/shared/types/index.ts` | 移除 schematic/pcb re-export |
+| 回退 | `src/shared/types/messages.types.ts` | 移除 schematic_data / pcb_layout_data + 相关 import |
+| 回退 | `src/extension/services/AiPipelineService.ts` | 移除 runSchematicStage / runPcbLayoutStage / parseSchematicIntent / parsePcbLayoutPlan / lastSchematic + BOM 阶段末尾的自动串联调用 |
+| 回退 | `src/webview/report/store/reportStore.ts` | 移除 schematicIntent / pcbLayoutPlan 字段 + setter |
+| 回退 | `src/webview/report/ReportApp.tsx` | 移除 SchematicSection / PcbLayoutSection import + 消息处理 case + tab 渲染 |
+
+共 12 个文件删除 + 5 个文件回退 = **17 个文件受影响**，影响范围可控，不涉及 Phase 0~4 的核心逻辑。
+
+**§13.6 代码审查清单**：
+
+- [x] 函数/方法命名自解释（runSchematicStage / parsePcbLayoutPlan / buildCombinedMermaid）
+- [x] 数据流可追踪：BOM完成 → runSchematicStage → AI stream → parse → ReportPanel.postMessage → reportStore → SchematicSection 渲染
+- [x] 错误路径明确处理（parse 失败 → sendPanelError，AI 调用失败 → catch → classifyError）
+- [x] KISS 检查通过（Mermaid 用源码展示而非 CDN 加载；CSS Grid 可视化而非 SVG 库）
+- [x] 代码风格一致（命名 / 结构 / 中文注释与现有 Phase 3~4 一致）
+- [x] messages.types.ts payload 从 unknown 改为具体类型，消除 ReportApp.tsx 全部 as any
+- [x] 文档同步：BACKEND_STRUCTURE.md §6.3 补充 V1 串行执行说明
+
+### Phase 5 开发纪律补救 ✅
+
+**问题**：Phase 5 初次实现未遵循 §13.5 Worktree 执行模板（7 步中仅步骤 5 合规）。
+
+**补救内容**：
+
+| §13.5 步骤 | 补救措施 |
+|-------------|----------|
+| 步骤 2 创建 worktree | stash → `wt-phase5-schematic-pcb` worktree + `feat/phase5/schematic-pcb` 分支 |
+| 步骤 3-1 IMPLEMENTATION_PLAN.md | §7.3 文件列表对齐实现（SchematicDiagram→MermaidRenderer，artifacts.ts→独立类型文件） |
+| 步骤 3-2 APP_FLOW.md | 新增 §2.8 原理图+PCB 用户流程 + Phase 5 验收清单扩展（4项→12项） |
+| 步骤 3-3 FRONTEND_GUIDELINES.md | §5.4 新增 4 个消息类型 + §5.5 新增 6 个组件交互测试 + §7 记录硬编码颜色技术债务 |
+| 步骤 3-4 BACKEND_STRUCTURE.md | §6.3 补充 V1 串行执行顺序说明 |
+| 步骤 6 补测试 | 安装 vitest + artifactParsers.ts 纯函数提取 + 27 个测试用例全部通过 |
+| 代码清理 | messages.types.ts unknown→具体类型 + ReportApp.tsx as any 全部消除 + 文件级注释补全 |
+
+**解析器重构**：AiPipelineService 私有解析方法提取为 `artifactParsers.ts` 纯函数模块，可独立测试。
+
+**§13.5 步骤 7 自检清单**：
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（27 tests passed）
+- [x] `npx @vscode/vsce package`（9 files, 242.72 KB）
+- [x] 无 console.log 残留
+- [x] progress.txt 已更新
+- [x] 受影响文档全部同步（IMPLEMENTATION_PLAN / APP_FLOW / FRONTEND_GUIDELINES / BACKEND_STRUCTURE）
+
+### 下一步：Phase 6 — 设计规则检查 + 导出
+- DRC 引擎
+- 报告导出（Markdown / JSON / CSV）
+- 完整端到端测试

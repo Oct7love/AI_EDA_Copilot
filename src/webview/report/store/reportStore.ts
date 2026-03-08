@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem } from '../../../shared/types';
+import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem, SchematicIntent, PCBLayoutPlan } from '../../../shared/types';
 
 interface ReportState {
   requirementSpec: RequirementSpec | null;
   overview: OverviewData | null;
   bomItems: BOMItem[];
   procurementItems: ProcurementItem[];
+  schematicIntent: SchematicIntent | null;
+  pcbLayoutPlan: PCBLayoutPlan | null;
   streamContent: string;
   isStreaming: boolean;
 
@@ -15,6 +17,8 @@ interface ReportState {
   setOverview: (data: OverviewData) => void;
   setBomItems: (items: BOMItem[]) => void;
   setProcurementItems: (items: ProcurementItem[]) => void;
+  setSchematicIntent: (data: SchematicIntent) => void;
+  setPcbLayoutPlan: (data: PCBLayoutPlan) => void;
   setStreamContent: (content: string) => void;
   appendStreamContent: (chunk: string) => void;
   setIsStreaming: (v: boolean) => void;
@@ -28,6 +32,8 @@ export const useReportStore = create<ReportState>((set) => ({
   overview: null,
   bomItems: [],
   procurementItems: [],
+  schematicIntent: null,
+  pcbLayoutPlan: null,
   streamContent: '',
   isStreaming: false,
   editingFields: {},
@@ -36,6 +42,8 @@ export const useReportStore = create<ReportState>((set) => ({
   setOverview: (data) => set({ overview: data }),
   setBomItems: (items) => set({ bomItems: items }),
   setProcurementItems: (items) => set({ procurementItems: items }),
+  setSchematicIntent: (data) => set({ schematicIntent: data }),
+  setPcbLayoutPlan: (data) => set({ pcbLayoutPlan: data }),
   setStreamContent: (content) => set({ streamContent: content }),
   appendStreamContent: (chunk) => set((s) => ({ streamContent: s.streamContent + chunk })),
   setIsStreaming: (v) => set({ isStreaming: v }),
@@ -50,6 +58,7 @@ export const useReportStore = create<ReportState>((set) => ({
   reset: () =>
     set({
       requirementSpec: null, overview: null, bomItems: [], procurementItems: [],
+      schematicIntent: null, pcbLayoutPlan: null,
       streamContent: '', isStreaming: false, editingFields: {},
     }),
 }));

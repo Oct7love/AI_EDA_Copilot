@@ -95,7 +95,39 @@ RequirementSpec 确认
   → CSV 导出 → 可直接导入嘉立创 SMT 下单页
 ```
 
-### 2.8 历史版本浏览流程（Phase 7）
+### 2.8 原理图 + PCB 布局流程（Phase 5）
+
+```text
+BOM + 采购匹配完成
+  → 自动串联 runSchematicStage()
+  → Panel 流式文本（AI 思考原理图连接）
+  → AI 输出 SchematicIntent JSON → 解析
+  → schematic_data 消息 → Report Tab
+  → Schematic Tab 渲染三种视图：
+    ├── 文字描述：模块卡片 + 网络分类 + 连接列表
+    ├── 模块框图：Mermaid flowchart 源码展示
+    └── 引脚连接表：全引脚列表 + 方向过滤器
+  → 用户可在三种视图间切换
+
+原理图完成
+  → 自动串联 runPcbLayoutStage()
+  → Panel 流式文本（AI 规划 PCB 布局）
+  → AI 输出 PCBLayoutPlan JSON → 解析
+  → pcb_layout_data 消息 → Report Tab
+  → PCB Layout Tab 渲染：
+    ├── 板级参数卡片：尺寸 + 层数 + source/status 标注
+    ├── 功能分区图：CSS Grid 3×3 色彩分区 + 元件标签
+    ├── 分区详情：名称 + 位置 + 用途
+    ├── 布局约束卡片：类型色彩编码 + 影响元件列表
+    ├── 走线指南：网络名 + 类别 + 严重度
+    └── 元件布局表：designator / zone / priority / notes
+  → 全管线完成提示
+```
+
+> **用户无需手动触发**：schematic 和 pcb_layout 阶段在 BOM 完成后自动串联执行。
+> **AI 推断标注**：boardSize / layerCount 若为 AI 推断，显示 "AI 推断" + "待确认" 标记，提醒用户不可直接用于制造。
+
+### 2.9 历史版本浏览流程（Phase 7）
 
 ```text
 用户在 Side Panel 项目列表
@@ -105,7 +137,7 @@ RequirementSpec 确认
   → 可对比不同方案
 ```
 
-### 2.9 新需求验收流程（开发侧）
+### 2.10 新需求验收流程（开发侧）
 
 ```text
 开发者完成一个 Phase / Feature
@@ -204,10 +236,18 @@ RequirementSpec 确认
 
 #### Phase 5 验收
 
-- [ ] SchematicIntent 三种展示形式可切换
-- [ ] Mermaid 框图正确渲染
-- [ ] 引脚连接表数据完整
-- [ ] PCBLayoutPlan 分区图渲染
+- [ ] BOM 完成后自动串联 schematic → pcb_layout，无需手动触发
+- [ ] SchematicIntent 三种展示形式可切换（文字描述 / 模块框图 / 引脚连接表）
+- [ ] 摘要统计正确（模块数 / 连接数 / 引脚数 / 网络数）
+- [ ] 文字描述视图：模块卡片 + 网络分类色彩标签 + 连接列表 from→to 格式
+- [ ] Mermaid 框图：显示 flowchart 源码（MVP），内容非空
+- [ ] 引脚连接表：方向过滤器（all/input/output/bidirectional/power）+ 计数正确
+- [ ] PCBLayoutPlan 板参数卡片：尺寸 / 层数 + source / status 标注
+- [ ] AI 推断参数显示 "AI 推断" + "待确认" 标记
+- [ ] 分区图 CSS Grid 色彩渲染 + 元件标签
+- [ ] 约束卡片按类型色彩编码（keep_out / placement / routing / thermal / clearance）
+- [ ] 走线指南按 category + severity 标注
+- [ ] 元件布局表 designator / zone / priority / notes 四列完整
 
 #### Phase 6 验收
 

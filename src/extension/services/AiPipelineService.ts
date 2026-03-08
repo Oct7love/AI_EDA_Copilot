@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { AnalysisRequest, RequirementSpec, OverviewData, BOMItem } from '@shared/types';
+import type { AnalysisRequest, RequirementSpec, OverviewData, BOMItem, SchematicIntent } from '@shared/types';
 import type { PipelineStage } from '@shared/types';
 import { RETRYABLE_ERRORS, createRetryState } from '@shared/types';
 import type { AiErrorCode } from '@shared/types';
@@ -7,7 +7,15 @@ import { AiAdapter, AiAdapterError, classifyError } from '../adapters/AiAdapter'
 import { StreamBuffer } from './StreamBuffer';
 import { buildRequirementPrompt } from '../prompts/requirementPrompt';
 import { buildBomPrompt } from '../prompts/bomPrompt';
+import { buildSchematicPrompt } from '../prompts/schematicPrompt';
+import { buildPcbLayoutPrompt } from '../prompts/pcbLayoutPrompt';
 import { ProcurementService } from './ProcurementService';
+import {
+  parseSchematicIntent,
+  parsePcbLayoutPlan,
+  parseBomItems,
+  parseRequirementSpec,
+} from './artifactParsers';
 import type { SidePanelProvider } from '../providers/SidePanelProvider';
 import { ReportPanelManager } from '../providers/ReportPanelManager';
 
@@ -19,6 +27,8 @@ export class AiPipelineService {
   lastSpec: RequirementSpec | null = null;
   /** 上一次 BOM 结果（导出消费） */
   lastBomItems: BOMItem[] = [];
+  /** 上一次原理图意图（PCB 阶段消费） */
+  lastSchematic: SchematicIntent | null = null;
 
   constructor(
     private readonly secrets: vscode.SecretStorage,
@@ -81,7 +91,7 @@ export class AiPipelineService {
 
       // 解析 JSON
       this.sendPanelStatus('requirement', 80);
-      const spec = this.parseRequirementSpec(fullText, request);
+      const spec = parseRequirementSpec(fullText, request);
 
       if (!spec) {
         this.sendPanelError('PARSE_ERROR', 'AI 输出 JSON 解析失败');
@@ -141,7 +151,7 @@ export class AiPipelineService {
       const fullText = await this.streamWithRetry(model, messages);
 
       this.sendPanelStatus('bom', 50);
-      const bomItems = this.parseBomItems(fullText);
+      const bomItems = parseBomItems(fullText);
 
       if (!bomItems || bomItems.length === 0) {
         this.sendPanelError('PARSE_ERROR', 'BOM JSON 解析失败');
@@ -184,11 +194,14 @@ export class AiPipelineService {
       this.panelProvider.postMessage({
         type: 'ai_chat_response',
         source: 'extension',
-        payload: { content: `BOM 选型完成（${bomItems.length} 项），采购匹配已更新。`, isStreaming: false },
+        payload: { content: `BOM 选型完成（${bomItems.length} 项），采购匹配已更新。开始原理图分析...`, isStreaming: false },
         timestamp: Date.now(),
       });
       this.sendPanelStatus('bom', 100);
       this.outputChannel.appendLine('[Pipeline] bom + procurement stage completed');
+
+      // 自动串联原理图阶段
+      await this.runSchematicStage(spec, bomItems);
     } catch (err) {
       const code = err instanceof AiAdapterError ? err.code : classifyError(err);
       const msg = err instanceof Error ? err.message : String(err);
@@ -197,36 +210,103 @@ export class AiPipelineService {
     }
   }
 
-  /** 解析 AI 输出的 BOMItem[] JSON */
-  private parseBomItems(text: string): BOMItem[] | null {
-    const parse = (raw: string): BOMItem[] | null => {
-      try {
-        const parsed = JSON.parse(raw);
-        const items = Array.isArray(parsed) ? parsed : parsed.bomItems ?? parsed.bom ?? null;
-        if (!Array.isArray(items)) return null;
-        // 补充默认字段
-        for (const item of items) {
-          item.alternatives = item.alternatives ?? [];
-          item.validationFindings = item.validationFindings ?? [];
-          item.status = item.status ?? 'pending_confirmation';
-        }
-        return items as BOMItem[];
-      } catch {
-        return null;
+  /** 原理图意图生成阶段 */
+  async runSchematicStage(spec: RequirementSpec, bomItems: BOMItem[]): Promise<void> {
+    try {
+      this.sendPanelStatus('schematic', 0);
+      this.outputChannel.appendLine('[Pipeline] schematic stage started');
+
+      const config = vscode.workspace.getConfiguration('aiEda');
+      const model = config.get<string>('model', 'claude-sonnet-4-6');
+      const language = config.get<'zh' | 'en'>('reportLanguage', 'zh');
+
+      const messages = buildSchematicPrompt(spec, bomItems, language);
+      const fullText = await this.streamWithRetry(model, messages);
+
+      this.sendPanelStatus('schematic', 80);
+      const schematic = parseSchematicIntent(fullText);
+
+      if (!schematic) {
+        this.sendPanelError('PARSE_ERROR', 'SchematicIntent JSON 解析失败');
+        return;
       }
-    };
 
-    const json = this.extractJson(text);
-    this.outputChannel.appendLine(`[Pipeline] BOM extractJson length=${json.length}, start=${json.slice(0, 200)}, end=${json.slice(-200)}`);
-    const result = parse(json);
-    if (result) return result;
+      this.outputChannel.appendLine(`[Pipeline] parsed schematic: ${schematic.modules.length} modules, ${schematic.connections.length} connections`);
+      this.lastSchematic = schematic;
 
-    this.outputChannel.appendLine('[Pipeline] BOM JSON parse failed, attempting repair');
-    let repaired = json;
-    repaired = repaired.replace(/,\s*([\]}])/g, '$1');
-    repaired = repaired.replace(/'/g, '"');
-    return parse(repaired);
+      ReportPanelManager.postMessage({
+        type: 'schematic_data',
+        source: 'extension',
+        payload: { schematicIntent: schematic },
+        timestamp: Date.now(),
+      });
+
+      this.panelProvider.postMessage({
+        type: 'ai_chat_response',
+        source: 'extension',
+        payload: { content: '原理图意图生成完成，开始 PCB 布局规划...', isStreaming: false },
+        timestamp: Date.now(),
+      });
+      this.sendPanelStatus('schematic', 100);
+      this.outputChannel.appendLine('[Pipeline] schematic stage completed');
+
+      // 自动串联 PCB 布局阶段
+      await this.runPcbLayoutStage(spec, bomItems, schematic);
+    } catch (err) {
+      const code = err instanceof AiAdapterError ? err.code : classifyError(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      this.outputChannel.appendLine(`[Pipeline] schematic error: ${code} — ${msg}`);
+      this.sendPanelError(code, msg);
+    }
   }
+
+  /** PCB 布局规划阶段 */
+  async runPcbLayoutStage(spec: RequirementSpec, bomItems: BOMItem[], schematic: SchematicIntent): Promise<void> {
+    try {
+      this.sendPanelStatus('pcb_layout', 0);
+      this.outputChannel.appendLine('[Pipeline] pcb_layout stage started');
+
+      const config = vscode.workspace.getConfiguration('aiEda');
+      const model = config.get<string>('model', 'claude-sonnet-4-6');
+      const language = config.get<'zh' | 'en'>('reportLanguage', 'zh');
+
+      const messages = buildPcbLayoutPrompt(spec, bomItems, schematic, language);
+      const fullText = await this.streamWithRetry(model, messages);
+
+      this.sendPanelStatus('pcb_layout', 80);
+      const plan = parsePcbLayoutPlan(fullText);
+
+      if (!plan) {
+        this.sendPanelError('PARSE_ERROR', 'PCBLayoutPlan JSON 解析失败');
+        return;
+      }
+
+      this.outputChannel.appendLine(`[Pipeline] parsed pcb layout: ${plan.zones.length} zones, ${plan.placements.length} placements`);
+
+      ReportPanelManager.postMessage({
+        type: 'pcb_layout_data',
+        source: 'extension',
+        payload: { pcbLayoutPlan: plan },
+        timestamp: Date.now(),
+      });
+
+      this.panelProvider.postMessage({
+        type: 'ai_chat_response',
+        source: 'extension',
+        payload: { content: `全部分析完成！需求 → BOM(${bomItems.length}项) → 原理图 → PCB 布局，请查看 Report Tab。`, isStreaming: false },
+        timestamp: Date.now(),
+      });
+      this.sendPanelStatus('pcb_layout', 100);
+      this.outputChannel.appendLine('[Pipeline] pcb_layout stage completed — full pipeline done');
+    } catch (err) {
+      const code = err instanceof AiAdapterError ? err.code : classifyError(err);
+      const msg = err instanceof Error ? err.message : String(err);
+      this.outputChannel.appendLine(`[Pipeline] pcb_layout error: ${code} — ${msg}`);
+      this.sendPanelError(code, msg);
+    }
+  }
+
+  // 解析逻辑已提取到 artifactParsers.ts（纯函数，可独立测试）
 
   /** 带重试的流式调用，返回完整文本 */
   private async streamWithRetry(
@@ -303,63 +383,7 @@ export class AiPipelineService {
     return fullText;
   }
 
-  /** 从完整文本中提取并解析 RequirementSpec JSON，补充元数据字段 */
-  private parseRequirementSpec(text: string, request?: AnalysisRequest): RequirementSpec | null {
-    const parse = (raw: string): RequirementSpec | null => {
-      try {
-        const parsed = JSON.parse(raw);
-        // 补充 AI 不输出的元数据字段
-        parsed.createdAt = parsed.createdAt ?? new Date().toISOString();
-        parsed.source = parsed.source ?? (request?.inputType ?? 'natural_language');
-        parsed.rawInput = parsed.rawInput ?? (request?.rawText ?? '');
-        // 确保 openQuestions 字段完整
-        if (Array.isArray(parsed.openQuestions)) {
-          for (const q of parsed.openQuestions) {
-            q.resolved = q.resolved ?? false;
-          }
-        }
-        return parsed as RequirementSpec;
-      } catch {
-        return null;
-      }
-    };
-
-    const json = this.extractJson(text);
-    const result = parse(json);
-    if (result) return result;
-
-    this.outputChannel.appendLine(`[Pipeline] JSON parse failed, attempting repair`);
-    let repaired = json;
-    repaired = repaired.replace(/,\s*([\]}])/g, '$1');
-    repaired = repaired.replace(/'/g, '"');
-    const repairResult = parse(repaired);
-    if (repairResult) return repairResult;
-
-    this.outputChannel.appendLine(`[Pipeline] JSON repair failed`);
-    return null;
-  }
-
-  /** 提取 JSON 块：支持 ```json ``` 包裹、对象 {} 和数组 [] */
-  private extractJson(text: string): string {
-    const fenced = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-    if (fenced) return fenced[1].trim();
-
-    // 同时检测 { 和 [ 的起始位置，取最早出现的
-    const objStart = text.indexOf('{');
-    const arrStart = text.indexOf('[');
-
-    if (arrStart !== -1 && (objStart === -1 || arrStart < objStart)) {
-      const arrEnd = text.lastIndexOf(']');
-      if (arrEnd > arrStart) return text.slice(arrStart, arrEnd + 1);
-    }
-
-    if (objStart !== -1) {
-      const objEnd = text.lastIndexOf('}');
-      if (objEnd > objStart) return text.slice(objStart, objEnd + 1);
-    }
-
-    return text.trim();
-  }
+  // extractJson / parseRequirementSpec 已提取到 artifactParsers.ts
 
   /** 从 RequirementSpec 本地派生 OverviewData */
   private deriveOverview(spec: RequirementSpec): OverviewData {

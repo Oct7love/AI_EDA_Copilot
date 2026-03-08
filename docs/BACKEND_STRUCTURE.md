@@ -473,13 +473,15 @@ interface DesignReviewFinding {
 
 ### 6.3 并行优化
 
-`procurement` 仅依赖 `BOMItem[]`，可与 `schematic` 阶段并行执行：
+`procurement` 仅依赖 `BOMItem[]`，理论上可与 `schematic` 阶段并行执行：
 
 ```text
 bom 完成后:
   ├── schematic   （串行，依赖 bom）
   └── procurement （并行，仅依赖 bom）
 ```
+
+> **V1 实际执行顺序**：V1 采用全串行策略 `requirement → bom → procurement → schematic → pcb_layout`，procurement 在 schematic 之前顺序执行。并行优化留待后续版本实现。串行策略下管线逻辑更简单，符合 KISS 原则。
 
 ---
 

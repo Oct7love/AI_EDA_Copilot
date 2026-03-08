@@ -131,6 +131,10 @@ expect(useReportStore.getState().editingFields['mcu']).toBeUndefined();
 | report_data | spec + overview 存入 store |
 | report_stream_chunk | streamContent 累积 |
 | report_stream_end | isStreaming = false |
+| bom_data | bomItems 存入 store |
+| procurement_data | procurementItems 存入 store |
+| schematic_data | schematicIntent 存入 store |
+| pcb_layout_data | pcbLayoutPlan 存入 store |
 
 ### 5.5 必测的 UI 交互
 
@@ -142,6 +146,12 @@ expect(useReportStore.getState().editingFields['mcu']).toBeUndefined();
 | TemplateSelector | 模板点击 → 预填表单 + 切换模式 |
 | RequirementsSection | 字段点击编辑、Enter 提交、Escape 取消、失焦提交 |
 | Tab 导航 | Tab 切换、活跃态样式、键盘可达 |
+| BomSection | 行展开/折叠、导出按钮触发消息 |
+| ProcurementSection | 替代件折叠展开、立创链接可点击 |
+| SchematicSection | 三视图切换（text/diagram/pins）、摘要统计正确 |
+| PinConnectionTable | 方向过滤器切换、计数更新、空筛选态 |
+| PcbLayoutSection | 板参数显示 + source/status 标注、约束/走线/布局表渲染 |
+| PcbZoneMap | 分区色彩渲染、元件标签显示、超过 5 个组件显示 +N |
 
 ### 5.6 无障碍测试要求
 
@@ -175,3 +185,11 @@ expect(useReportStore.getState().editingFields['mcu']).toBeUndefined();
 - 明确的提示文案（告诉用户下一步做什么）
 - 适当的视觉占位
 - 不显示 loading spinner（除非确实在加载中）
+
+---
+
+## 7. 已知技术债务
+
+| 债务 | 涉及文件 | 说明 |
+|------|----------|------|
+| 硬编码颜色值 | `PcbLayoutSection.css`, `SchematicSection.css`, `ProcurementSection.css`, `BomRowDetail` 等 | Phase 3~5 的状态徽章/色彩编码使用了硬编码 hex 值（如 `#e74c3c22`），违反 §4.1 规范。应抽象为 `--eda-status-*` CSS 变量，在 `variables.css` 中统一定义，以支持主题切换。 |

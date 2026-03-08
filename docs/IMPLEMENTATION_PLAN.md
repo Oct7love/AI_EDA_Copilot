@@ -389,26 +389,36 @@ src/
 
 ```text
 src/
-├─ extension/
-│  ├─ services/
-│  │  └─ AiPipelineService.ts        // 更新：增加 schematic + pcb_layout 阶段
-│  └─ prompts/
-│     ├─ schematicPrompt.ts
-│     └─ pcbLayoutPrompt.ts
-├─ webview/
-│  └─ report/
-│     └─ components/
-│        ├─ SchematicSection.tsx       // 原理图意图板块
-│        ├─ SchematicTextView.tsx      // 文字描述子组件
-│        ├─ SchematicDiagram.tsx       // Mermaid 框图子组件
-│        ├─ PinConnectionTable.tsx     // 引脚连接表子组件
-│        ├─ PcbLayoutSection.tsx       // PCB 布局板块
-│        ├─ PcbZoneMap.tsx             // 分区可视化
-│        └─ MermaidRenderer.tsx        // Mermaid 通用渲染器
 ├─ shared/
 │  └─ types/
-│     └─ artifacts.ts                 // 更新：SchematicIntent, PCBLayoutPlan
+│     ├─ schematic.types.ts           // 新增：SchematicIntent 及子类型
+│     ├─ pcb.types.ts                 // 新增：PCBLayoutPlan 及子类型
+│     ├─ index.ts                     // 更新：re-export 新类型
+│     └─ messages.types.ts            // 更新：schematic_data / pcb_layout_data 消息类型
+├─ extension/
+│  ├─ services/
+│  │  └─ AiPipelineService.ts         // 更新：runSchematicStage + runPcbLayoutStage + 解析器 + 自动串联
+│  └─ prompts/
+│     ├─ schematicPrompt.ts           // 新增：原理图意图生成 prompt
+│     └─ pcbLayoutPrompt.ts           // 新增：PCB 布局规划 prompt
+├─ webview/
+│  └─ report/
+│     ├─ store/
+│     │  └─ reportStore.ts            // 更新：schematicIntent / pcbLayoutPlan 状态
+│     ├─ ReportApp.tsx                // 更新：导入新组件 + 消息处理 + tab 渲染
+│     └─ components/
+│        ├─ SchematicSection.tsx + .css  // 新增：原理图意图板块（三视图切换）
+│        ├─ SchematicTextView.tsx        // 新增：文字描述子组件
+│        ├─ PinConnectionTable.tsx       // 新增：引脚连接表子组件
+│        ├─ MermaidRenderer.tsx          // 新增：Mermaid 源码展示（MVP，预留 CDN 渲染接口）
+│        ├─ PcbLayoutSection.tsx + .css  // 新增：PCB 布局板块
+│        └─ PcbZoneMap.tsx              // 新增：CSS Grid 3×3 分区可视化
 ```
+
+> **与原计划差异说明**：
+> - 原计划 `SchematicDiagram.tsx` 合并入 `MermaidRenderer.tsx`，作为通用 Mermaid 渲染器
+> - 原计划类型放 `artifacts.ts`，实际拆为独立的 `schematic.types.ts` + `pcb.types.ts`，保持单一职责
+> - 新增 `messages.types.ts` / `reportStore.ts` / `ReportApp.tsx` / `index.ts` 的修改，原计划未列出
 
 ### 7.4 验收标准
 
