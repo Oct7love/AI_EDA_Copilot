@@ -105,6 +105,29 @@ RequirementSpec 确认
   → 可对比不同方案
 ```
 
+### 2.9 新需求验收流程（开发侧）
+
+```text
+开发者完成一个 Phase / Feature
+  → 检查 Worktree 分支是否干净（无遗留 TODO / FIXME）
+  → 运行编译检查（npm run compile）
+  → 执行手动验收清单（见 §3.3 对应 Phase）
+  → 补充 / 更新 progress.txt
+  → 检查文档同步（类型 ↔ BACKEND_STRUCTURE / prompt ↔ 文档）
+  → 提交 PR / 合并到主分支
+  → .vsix 打包验证
+```
+
+**验收通过标准：**
+
+| 维度 | 要求 |
+|------|------|
+| 编译 | `tsc` 零错误，`esbuild` 三入口成功 |
+| 打包 | `.vsix` 文件大小合理，无遗漏资源 |
+| 功能 | 对应 Phase 手动验收清单全部通过 |
+| 文档 | progress.txt 已更新，受影响文档已同步 |
+| 代码 | 无 `console.log` 残留（调试用 outputChannel），无硬编码密钥 |
+
 ---
 
 ## 3. 关键用户流程测试用例
@@ -129,6 +152,18 @@ RequirementSpec 确认
 | ERR-004 | 速率限制 | 连续提交 | 429 触发重试，显示等待倒计时 |
 | ERR-005 | 并发提交 | 快速连续提交 | 第二次提交被拒绝，提示"已有任务运行中" |
 | ERR-006 | JSON 解析失败 | AI 输出非法 JSON | 尝试修复，失败后显示 PARSE_ERROR |
+
+### 3.4 需求开发验收用例
+
+每个 Phase / Feature 合并前，开发者必须逐项检查：
+
+| 用例编号 | 验收维度 | 检查项 | 通过标准 |
+|----------|----------|--------|----------|
+| DEV-001 | 编译完整性 | `npm run compile` 零错误 | tsc + esbuild 三入口全部成功 |
+| DEV-002 | 打包完整性 | `npx @vscode/vsce package --no-dependencies` | .vsix 生成，大小合理 |
+| DEV-003 | 文档同步 | progress.txt + 受影响文档已更新 | 无遗漏变更记录 |
+| DEV-004 | 代码卫生 | 无调试残留 / 无硬编码密钥 / 无未使用 import | 代码审查清单全部通过 |
+| DEV-005 | 功能验收 | 对应 Phase 手动验收清单（§3.3） | 全部勾选通过 |
 
 ### 3.3 手动验收检查清单
 
