@@ -28,6 +28,23 @@
   --eda-warning: var(--vscode-editorWarning-foreground);
   --eda-info: var(--vscode-editorInfo-foreground);
 
+  /* 状态语义色 */
+  --eda-status-critical: #f14c4c;
+  --eda-status-warning: #cca700;
+  --eda-status-ok: #4ec9b0;
+  --eda-status-info: #4da9ef;
+  --eda-status-muted: #888;
+
+  /* EDA 分类色（分区/网络/路由/约束通用） */
+  --eda-cat-power: #e74c3c;
+  --eda-cat-signal: #3498db;
+  --eda-cat-control: #2ecc71;
+  --eda-cat-analog: #f39c12;
+  --eda-cat-differential: #9b59b6;
+  --eda-cat-misc-1: #1abc9c;
+  --eda-cat-misc-2: #e67e22;
+  --eda-cat-misc-3: #34495e;
+
   /* 间距 */
   --eda-space-1: 4px;
   --eda-space-2: 8px;

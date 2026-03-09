@@ -186,13 +186,13 @@
 
 .requirements-source-badge--user {
   background: rgba(78, 201, 176, 0.15);
-  color: #4ec9b0;
+  color: var(--eda-status-ok, #4ec9b0);
   border: 1px solid rgba(78, 201, 176, 0.35);
 }
 
 .requirements-source-badge--ai {
   background: rgba(0, 122, 204, 0.15);
-  color: #4da9ef;
+  color: var(--eda-status-info, #4da9ef);
   border: 1px solid rgba(0, 122, 204, 0.35);
 }
 
@@ -206,12 +206,12 @@
 
 .requirements-status-badge--confirmed {
   background: rgba(78, 201, 176, 0.15);
-  color: #4ec9b0;
+  color: var(--eda-status-ok, #4ec9b0);
 }
 
 .requirements-status-badge--pending_confirmation {
   background: rgba(204, 167, 0, 0.15);
-  color: #cca700;
+  color: var(--eda-status-warning, #cca700);
 }
 
 .requirements-confidence {
@@ -283,9 +283,9 @@
   border-left: 3px solid transparent;
 }
 
-.requirements-question-item--critical { border-left-color: #f14c4c; }
-.requirements-question-item--important { border-left-color: #cca700; }
-.requirements-question-item--optional { border-left-color: #888; }
+.requirements-question-item--critical { border-left-color: var(--eda-status-critical, #f14c4c); }
+.requirements-question-item--important { border-left-color: var(--eda-status-warning, #cca700); }
+.requirements-question-item--optional { border-left-color: var(--eda-status-muted, #888); }
 
 .requirements-question-priority {
   flex-shrink: 0;
@@ -298,17 +298,17 @@
 
 .requirements-question-priority--critical {
   background: rgba(241, 76, 76, 0.15);
-  color: #f14c4c;
+  color: var(--eda-status-critical, #f14c4c);
 }
 
 .requirements-question-priority--important {
   background: rgba(204, 167, 0, 0.15);
-  color: #cca700;
+  color: var(--eda-status-warning, #cca700);
 }
 
 .requirements-question-priority--optional {
   background: rgba(136, 136, 136, 0.15);
-  color: #888;
+  color: var(--eda-status-muted, #888);
 }
 
 .requirements-question-text {
