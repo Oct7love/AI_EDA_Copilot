@@ -1,3 +1,4 @@
+/** PCB 分区可视化子组件，CSS Grid 3×3 色彩分区 */
 import React from 'react';
 import type { LayoutZone } from '../../../shared/types';
 

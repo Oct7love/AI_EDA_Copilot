@@ -1,3 +1,4 @@
+/** Side Panel 主组件，管理消息监听、输入模式切换和全局布局 */
 import React, { useEffect, useCallback } from 'react';
 import { useInputStore } from './store/inputStore';
 import { InputModeToggle } from './components/InputModeToggle';

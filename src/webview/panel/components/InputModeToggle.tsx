@@ -1,3 +1,4 @@
+/** Chat / Form 模式切换组件 */
 import React from 'react';
 import { useInputStore, type InputMode } from '../store/inputStore';
 import './InputModeToggle.css';

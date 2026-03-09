@@ -1,3 +1,6 @@
+/**
+ * 输入标准化服务，将 chat/form/template 三种输入统一为 AnalysisRequest
+ */
 import type { AnalysisRequest, FormInputData } from '../../shared/types';
 import { PROJECT_TEMPLATES } from '../../shared/constants/templates';
 

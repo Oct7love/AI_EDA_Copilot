@@ -1,3 +1,6 @@
+/**
+ * Extension ↔ Webview 消息协议类型定义，所有 postMessage 必须遵循此格式
+ */
 import type { PipelineStage, ReportSection } from './pipeline.types';
 import type { RequirementSpec, OverviewData } from './artifacts.types';
 import type { BOMItem } from './bom.types';

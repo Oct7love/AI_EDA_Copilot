@@ -1,3 +1,4 @@
+/** PCB 布局板块，板参数 + 分区图 + 约束 + 走线指南 */
 import React from 'react';
 import { useReportStore } from '../store/reportStore';
 import { PcbZoneMap } from './PcbZoneMap';

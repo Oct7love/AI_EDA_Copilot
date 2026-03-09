@@ -9,7 +9,7 @@ interface VsCodeApi {
   setState(state: unknown): void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// as any: VS Code Webview 全局 API 无 TypeScript 类型声明，必须通过 globalThis 动态访问
 const vscodeApi: VsCodeApi = (globalThis as any).acquireVsCodeApi?.()
   ?? { postMessage: () => {}, getState: () => null, setState: () => {} };
 

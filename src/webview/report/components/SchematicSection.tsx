@@ -1,3 +1,4 @@
+/** 原理图意图板块，三视图切换（文字/框图/引脚表） */
 import React, { useState } from 'react';
 import { useReportStore } from '../store/reportStore';
 import { SchematicTextView } from './SchematicTextView';

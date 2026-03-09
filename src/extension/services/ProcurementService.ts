@@ -1,3 +1,6 @@
+/**
+ * 采购匹配服务，串行匹配 BOMItem 到 JLCPCB 料号
+ */
 import type { BOMItem, ProcurementItem, ProcurementAlternative, JlcComponent } from '@shared/types';
 import { JlcAdapter } from '../adapters/JlcAdapter';
 

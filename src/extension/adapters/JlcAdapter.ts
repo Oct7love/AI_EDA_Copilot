@@ -1,3 +1,6 @@
+/**
+ * JLCPCB 料号查询适配器，封装 jlcsearch API，隔离外部接口细节
+ */
 import type { JlcComponent, JlcSearchParams } from '@shared/types';
 
 const BASE_URL = 'https://jlcsearch.tscircuit.com';

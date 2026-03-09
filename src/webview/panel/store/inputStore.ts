@@ -1,3 +1,4 @@
+/** Side Panel Zustand Store，管理输入状态、消息列表和生成状态 */
 import { create } from 'zustand';
 import type { FormInputData } from '../../../shared/types';
 import { createEmptyFormData } from '../../../shared/types';

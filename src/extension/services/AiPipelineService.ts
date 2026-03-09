@@ -1,3 +1,6 @@
+/**
+ * AI 管线编排器，按顺序执行 requirement→bom→schematic→pcb_layout 四阶段
+ */
 import * as vscode from 'vscode';
 import type { AnalysisRequest, RequirementSpec, OverviewData, BOMItem, SchematicIntent } from '@shared/types';
 import type { PipelineStage } from '@shared/types';

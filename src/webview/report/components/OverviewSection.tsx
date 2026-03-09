@@ -1,3 +1,4 @@
+/** 概览板块，展示摘要/就绪度/模块/风险/开放问题 */
 import React from 'react';
 import type { FunctionalModule, OpenQuestion } from '../../../shared/types';
 import { useReportStore } from '../store/reportStore';

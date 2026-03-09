@@ -1,3 +1,6 @@
+/**
+ * V1 预设模板数据（5 个），供 TemplateSelector 消费
+ */
 import type { ProjectTemplate } from '../types/template.types';
 
 /** V1 预设模板：对齐 PRD §5.1.3 */

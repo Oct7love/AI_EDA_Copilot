@@ -1,3 +1,4 @@
+/** Report Tab 主组件，管理 6-Tab 导航和消息路由 */
 import React, { useEffect } from 'react';
 import type { ExtensionToReport, ReportToExtension, ReportSection } from '../../shared/types';
 import { createMessage } from '../../shared/types';

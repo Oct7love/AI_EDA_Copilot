@@ -1,3 +1,4 @@
+/** 模板选择器，卡片网格展示，点击预填表单 */
 import React, { useCallback } from 'react';
 import { PROJECT_TEMPLATES } from '../../../shared/constants/templates';
 import { useInputStore } from '../store/inputStore';

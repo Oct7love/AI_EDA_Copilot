@@ -1,3 +1,6 @@
+/**
+ * 侧边栏 WebviewViewProvider，负责 React 加载和消息通信
+ */
 import * as vscode from 'vscode';
 import type { PanelToExtension, ExtensionToPanel } from '../../shared/types';
 

@@ -1,3 +1,4 @@
+/** Report Tab Zustand Store，管理报告数据、流式内容和编辑态 */
 import { create } from 'zustand';
 import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem, SchematicIntent, PCBLayoutPlan } from '../../../shared/types';
 
