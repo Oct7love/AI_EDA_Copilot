@@ -192,4 +192,4 @@ expect(useReportStore.getState().editingFields['mcu']).toBeUndefined();
 
 | 债务 | 涉及文件 | 说明 |
 |------|----------|------|
-| 硬编码颜色值 | `PcbLayoutSection.css`, `SchematicSection.css`, `ProcurementSection.css`, `BomRowDetail` 等 | Phase 3~5 的状态徽章/色彩编码使用了硬编码 hex 值（如 `#e74c3c22`），违反 §4.1 规范。应抽象为 `--eda-status-*` CSS 变量，在 `variables.css` 中统一定义，以支持主题切换。 |
+| ~~硬编码颜色值~~ | ~~已修复~~ | 已在 `variables.css` 新增 `--eda-status-*` / `--eda-cat-*` 语义变量，7 个 CSS/TSX 文件已替换为 `var()` 引用。`background: #hex22` 带 alpha 值因 CSS 变量不支持拼接保留原值。 |

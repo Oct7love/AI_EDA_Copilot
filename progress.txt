@@ -274,6 +274,33 @@
 - [x] progress.txt 已更新
 - [x] 受影响文档全部同步（IMPLEMENTATION_PLAN / APP_FLOW / FRONTEND_GUIDELINES / BACKEND_STRUCTURE）
 
+## 2026-03-09
+
+### 代码规范合规性修复 ✅
+
+**审计范围**：CLAUDE.md + IMPLEMENTATION_PLAN §13.6 + FRONTEND_GUIDELINES 全量比对
+
+**修复内容**（按风险递增分 3 批执行，每批编译验证）：
+
+| 批次 | 内容 | 文件数 | 风险 |
+|------|------|--------|------|
+| A | 36 个文件补充文件级注释 + 3 处 `as any` 原因注释 | 37 | 零 |
+| B | AiPipelineService 拆分（471→299 行）：提取 `overviewDeriver.ts` + `pipelineStreamRunner.ts` + DRY `getConfig()` / `handleStageError()` | 3 | 中 |
+| C | 硬编码颜色值替换为 CSS 变量：新增 `--eda-status-*` / `--eda-cat-*` 语义变量 | 8 | 低 |
+
+**测试补充**：
+- `StreamBuffer.test.ts`（6 测试）— 批量缓冲、flush 时序、dispose
+- `overviewDeriver.test.ts`（11 测试）— 纯函数派生逻辑全覆盖
+- `pipelineStreamRunner.test.ts`（5 测试）— 重试策略 + 错误分类
+
+**§13.5 步骤 7 自检清单**：
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（49 tests passed，4 文件）
+- [x] `npx @vscode/vsce package`（9 files, 243.06 KB）
+- [x] 无 console.log 残留
+- [x] progress.txt 已更新
+- [x] FRONTEND_GUIDELINES.md §7 技术债务条目已标记修复
+
 ### 下一步：Phase 6 — 设计规则检查 + 导出
 - DRC 引擎
 - 报告导出（Markdown / JSON / CSV）
