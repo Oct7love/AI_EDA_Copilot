@@ -126,10 +126,10 @@
   text-transform: uppercase;
 }
 
-.network-type--power { background: #e74c3c22; color: #e74c3c; }
-.network-type--communication { background: #3498db22; color: #3498db; }
-.network-type--control { background: #2ecc7122; color: #2ecc71; }
-.network-type--analog { background: #f39c1222; color: #f39c12; }
+.network-type--power { background: #e74c3c22; color: var(--eda-cat-power, #e74c3c); }
+.network-type--communication { background: #3498db22; color: var(--eda-cat-signal, #3498db); }
+.network-type--control { background: #2ecc7122; color: var(--eda-cat-control, #2ecc71); }
+.network-type--analog { background: #f39c1222; color: var(--eda-cat-analog, #f39c12); }
 
 .network-nets {
   font-family: monospace;
@@ -175,10 +175,10 @@
   font-family: monospace;
 }
 
-.conn-net--power { background: #e74c3c22; color: #e74c3c; }
-.conn-net--communication { background: #3498db22; color: #3498db; }
-.conn-net--control { background: #2ecc7122; color: #2ecc71; }
-.conn-net--analog { background: #f39c1222; color: #f39c12; }
+.conn-net--power { background: #e74c3c22; color: var(--eda-cat-power, #e74c3c); }
+.conn-net--communication { background: #3498db22; color: var(--eda-cat-signal, #3498db); }
+.conn-net--control { background: #2ecc7122; color: var(--eda-cat-control, #2ecc71); }
+.conn-net--analog { background: #f39c1222; color: var(--eda-cat-analog, #f39c12); }
 
 .conn-notes {
   color: var(--vscode-descriptionForeground);
@@ -288,10 +288,10 @@
   font-size: 11px;
 }
 
-.pin-direction--input { background: #3498db22; color: #3498db; }
-.pin-direction--output { background: #2ecc7122; color: #2ecc71; }
-.pin-direction--bidirectional { background: #9b59b622; color: #9b59b6; }
-.pin-direction--power { background: #e74c3c22; color: #e74c3c; }
+.pin-direction--input { background: #3498db22; color: var(--eda-cat-signal, #3498db); }
+.pin-direction--output { background: #2ecc7122; color: var(--eda-cat-control, #2ecc71); }
+.pin-direction--bidirectional { background: #9b59b622; color: var(--eda-cat-differential, #9b59b6); }
+.pin-direction--power { background: #e74c3c22; color: var(--eda-cat-power, #e74c3c); }
 
 .pin-cell-desc {
   color: var(--vscode-descriptionForeground);

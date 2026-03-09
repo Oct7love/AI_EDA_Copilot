@@ -1,3 +1,4 @@
+/** 引脚连接表子组件，方向过滤器 + 色彩徽章 */
 import React, { useState } from 'react';
 import type { PinConnection } from '../../../shared/types';
 

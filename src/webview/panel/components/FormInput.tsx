@@ -1,3 +1,4 @@
+/** 表单输入组件，核心字段 + 折叠扩展字段 + Analyze 提交 */
 import React, { useCallback } from 'react';
 import { useInputStore } from '../store/inputStore';
 import vscodeApi from '../../shared/vscodeApi';

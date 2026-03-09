@@ -1,3 +1,6 @@
+/**
+ * AI API 适配器，封装 OpenAI SDK 的 stream/complete 调用，隔离协议细节
+ */
 import OpenAI from 'openai';
 import * as vscode from 'vscode';
 import type { AiCompletionParams, AiStreamChunk, AiErrorCode } from '@shared/types';
@@ -62,6 +65,7 @@ export class AiAdapter {
     };
     if (systemPrompt) body.system = systemPrompt;
 
+    // as any: OpenAI SDK 类型不支持动态 body（含可选 system 字段），需绕过类型检查
     const response = await (client.chat.completions as any).create(body);
     this.log?.(`[AiAdapter] response type=${typeof response}, constructor=${response?.constructor?.name}`);
 
@@ -97,6 +101,7 @@ export class AiAdapter {
     };
     if (systemPrompt) body.system = systemPrompt;
 
+    // as any: OpenAI SDK 类型不支持动态 body（含可选 system 字段），需绕过类型检查
     const response = await (client.chat.completions as any).create(body);
 
     return response.choices[0]?.message?.content ?? '';

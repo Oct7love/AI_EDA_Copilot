@@ -1,3 +1,4 @@
+/** 对话输入组件，Enter 发送 / Shift+Enter 换行 */
 import React, { useCallback } from 'react';
 import { useInputStore } from '../store/inputStore';
 import vscodeApi from '../../shared/vscodeApi';

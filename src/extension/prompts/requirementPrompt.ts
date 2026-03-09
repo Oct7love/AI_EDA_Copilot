@@ -1,3 +1,6 @@
+/**
+ * 需求分析 Prompt，输入用户描述，输出 RequirementSpec JSON
+ */
 import type { AiMessage } from '@shared/types';
 
 const SYSTEM_PROMPT = `You are a senior electronics design engineer. Analyze the user's hardware project description and extract a structured RequirementSpec in JSON format.

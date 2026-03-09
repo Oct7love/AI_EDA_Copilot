@@ -1,3 +1,6 @@
+/**
+ * Report Tab WebviewPanel 单例管理，负责生命周期和消息路由
+ */
 import * as vscode from 'vscode';
 import type { ReportToExtension, ExtensionToReport } from '../../shared/types';
 

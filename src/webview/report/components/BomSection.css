@@ -124,7 +124,7 @@
 
 .bom-lcsc-matched {
   font-family: var(--eda-font-mono, monospace);
-  color: #4ec9b0;
+  color: var(--eda-status-ok, #4ec9b0);
   font-weight: 600;
 }
 
@@ -184,13 +184,13 @@
 
 .bom-source-badge--user {
   background: rgba(78, 201, 176, 0.15);
-  color: #4ec9b0;
+  color: var(--eda-status-ok, #4ec9b0);
   border: 1px solid rgba(78, 201, 176, 0.35);
 }
 
 .bom-source-badge--ai {
   background: rgba(0, 122, 204, 0.15);
-  color: #4da9ef;
+  color: var(--eda-status-info, #4da9ef);
   border: 1px solid rgba(0, 122, 204, 0.35);
 }
 

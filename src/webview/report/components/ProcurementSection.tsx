@@ -1,3 +1,4 @@
+/** 采购板块，兼容性概要 + 器件卡片 + 替代件 */
 import React, { useState, useMemo } from 'react';
 import type { ProcurementItem } from '../../../shared/types';
 import { createMessage } from '../../../shared/types';

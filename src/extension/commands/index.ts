@@ -1,3 +1,6 @@
+/**
+ * VS Code 命令注册中心，将命令绑定到 Service 层，不含业务逻辑
+ */
 import * as vscode from 'vscode';
 import { ReportPanelManager } from '../providers/ReportPanelManager';
 

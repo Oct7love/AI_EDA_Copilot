@@ -1,3 +1,6 @@
+/**
+ * BOM CSV 导出，对齐嘉立创 SMT 模板格式
+ */
 import * as vscode from 'vscode';
 import type { BOMItem } from '@shared/types';
 

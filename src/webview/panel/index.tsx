@@ -1,3 +1,4 @@
+/** Side Panel Webview 入口，挂载 PanelApp 到 DOM */
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import '../styles/variables.css';

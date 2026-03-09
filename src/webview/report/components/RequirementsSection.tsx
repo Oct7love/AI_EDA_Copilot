@@ -1,3 +1,4 @@
+/** 需求板块，字段展示 + source/status 标注 + 受控编辑 */
 import React, { useState, useCallback } from 'react';
 import type { RequirementField, FunctionalModule, OpenQuestion, FieldStatus } from '../../../shared/types';
 import { createMessage } from '../../../shared/types';

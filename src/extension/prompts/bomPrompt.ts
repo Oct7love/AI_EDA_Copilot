@@ -1,3 +1,6 @@
+/**
+ * BOM 生成 Prompt，输入 RequirementSpec，输出 BOMItem[] JSON
+ */
 import type { AiMessage, RequirementSpec } from '@shared/types';
 
 const SYSTEM_PROMPT = `You are a senior hardware engineer and BOM specialist. Based on the given RequirementSpec, generate a complete Bill of Materials (BOM) as a JSON array of BOMItem objects.

@@ -1,3 +1,4 @@
+/** 原理图文字描述子组件，模块卡片 + 网络分类 */
 import React from 'react';
 import type { SchematicIntent } from '../../../shared/types';
 

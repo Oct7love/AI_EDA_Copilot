@@ -48,10 +48,10 @@
   border-left: 3px solid transparent;
 }
 
-.proc-summary-item--compat-ok { border-left-color: #4ec9b0; }
-.proc-summary-item--compat-partial { border-left-color: #cca700; }
-.proc-summary-item--compat-bad { border-left-color: #f14c4c; }
-.proc-summary-item--compat-unknown { border-left-color: #888; }
+.proc-summary-item--compat-ok { border-left-color: var(--eda-status-ok, #4ec9b0); }
+.proc-summary-item--compat-partial { border-left-color: var(--eda-status-warning, #cca700); }
+.proc-summary-item--compat-bad { border-left-color: var(--eda-status-critical, #f14c4c); }
+.proc-summary-item--compat-unknown { border-left-color: var(--eda-status-muted, #888); }
 
 .proc-summary-count {
   font-size: 1.25rem;
@@ -133,10 +133,10 @@
   text-transform: uppercase;
 }
 
-.compat-ok { background: rgba(78, 201, 176, 0.15); color: #4ec9b0; border: 1px solid rgba(78, 201, 176, 0.35); }
-.compat-partial { background: rgba(204, 167, 0, 0.15); color: #cca700; border: 1px solid rgba(204, 167, 0, 0.35); }
-.compat-bad { background: rgba(241, 76, 76, 0.15); color: #f14c4c; border: 1px solid rgba(241, 76, 76, 0.35); }
-.compat-unknown { background: rgba(136, 136, 136, 0.15); color: #888; border: 1px solid rgba(136, 136, 136, 0.3); }
+.compat-ok { background: rgba(78, 201, 176, 0.15); color: var(--eda-status-ok, #4ec9b0); border: 1px solid rgba(78, 201, 176, 0.35); }
+.compat-partial { background: rgba(204, 167, 0, 0.15); color: var(--eda-status-warning, #cca700); border: 1px solid rgba(204, 167, 0, 0.35); }
+.compat-bad { background: rgba(241, 76, 76, 0.15); color: var(--eda-status-critical, #f14c4c); border: 1px solid rgba(241, 76, 76, 0.35); }
+.compat-unknown { background: rgba(136, 136, 136, 0.15); color: var(--eda-status-muted, #888); border: 1px solid rgba(136, 136, 136, 0.3); }
 
 .proc-match-type {
   font-size: 0.6rem;
@@ -183,10 +183,10 @@
   text-transform: uppercase;
 }
 
-.proc-smt-badge--ready { background: rgba(78, 201, 176, 0.15); color: #4ec9b0; }
+.proc-smt-badge--ready { background: rgba(78, 201, 176, 0.15); color: var(--eda-status-ok, #4ec9b0); }
 .proc-smt-badge--missing_footprint,
-.proc-smt-badge--missing_part { background: rgba(241, 76, 76, 0.15); color: #f14c4c; }
-.proc-smt-badge--manual_only { background: rgba(204, 167, 0, 0.15); color: #cca700; }
+.proc-smt-badge--missing_part { background: rgba(241, 76, 76, 0.15); color: var(--eda-status-critical, #f14c4c); }
+.proc-smt-badge--manual_only { background: rgba(204, 167, 0, 0.15); color: var(--eda-status-warning, #cca700); }
 
 /* 推荐 */
 .proc-recommendation {
@@ -207,7 +207,7 @@
   padding: 1px 5px;
   border-radius: 3px;
   background: rgba(241, 76, 76, 0.1);
-  color: #f14c4c;
+  color: var(--eda-status-critical, #f14c4c);
   border: 1px solid rgba(241, 76, 76, 0.25);
 }
 

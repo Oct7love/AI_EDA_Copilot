@@ -1,3 +1,4 @@
+/** BOM 行展开详情子组件，显示描述/分类/制造商/AI 标注 */
 import React from 'react';
 import type { BOMItem } from '../../../shared/types';
 import { createMessage } from '../../../shared/types';

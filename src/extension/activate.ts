@@ -1,3 +1,6 @@
+/**
+ * 插件入口，注册 Provider / 命令 / 消息路由，不含业务逻辑
+ */
 import * as vscode from 'vscode';
 import { SidePanelProvider } from './providers/SidePanelProvider';
 import { ReportPanelManager } from './providers/ReportPanelManager';
