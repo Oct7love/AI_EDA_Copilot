@@ -1,5 +1,16 @@
 /**
- * AI 管线编排器，按顺序执行 requirement→bom→schematic→pcb_layout 四阶段
+ * AI 管线编排器，按顺序执行四阶段串联：
+ *
+ * 数据流：
+ *   AnalysisRequest → runRequirementStage() → RequirementSpec
+ *     → runBomStage(spec) → BOMItem[] + ProcurementItem[]
+ *     → runSchematicStage(spec, bomItems) → SchematicIntent
+ *     → runPcbLayoutStage(spec, bomItems, schematic) → PCBLayoutPlan
+ *
+ * 各阶段可独立调用，通过 lastSpec/lastBomItems/lastSchematic 缓存传递
+ * 错误处理：handleStageError() → sendPanelError() → 中断后续阶段
+ * 并发控制：isRunning flag 防止并行任务
+ * 流式调用：委托 pipelineStreamRunner.streamWithRetry()（含 10 次 / 15s 重试）
  */
 import * as vscode from 'vscode';
 import type { AnalysisRequest, RequirementSpec, BOMItem, SchematicIntent, PipelineStage, AiErrorCode } from '@shared/types';
@@ -196,7 +207,6 @@ export class AiPipelineService {
     }
   }
 
-  /** 原理图意图生成阶段 */
   async runSchematicStage(spec: RequirementSpec, bomItems: BOMItem[]): Promise<void> {
     try {
       this.sendPanelStatus('schematic', 0);
@@ -239,7 +249,6 @@ export class AiPipelineService {
     }
   }
 
-  /** PCB 布局规划阶段 */
   async runPcbLayoutStage(spec: RequirementSpec, bomItems: BOMItem[], schematic: SchematicIntent): Promise<void> {
     try {
       this.sendPanelStatus('pcb_layout', 0);
@@ -280,20 +289,10 @@ export class AiPipelineService {
   }
 
   private sendPanelStatus(stage: PipelineStage, progress: number): void {
-    this.panelProvider.postMessage({
-      type: 'generation_status',
-      source: 'extension',
-      payload: { stage, progress },
-      timestamp: Date.now(),
-    });
+    this.panelProvider.postMessage({ type: 'generation_status', source: 'extension', payload: { stage, progress }, timestamp: Date.now() });
   }
 
   private sendPanelError(code: AiErrorCode | string, message: string): void {
-    this.panelProvider.postMessage({
-      type: 'error',
-      source: 'extension',
-      payload: { code: String(code), message },
-      timestamp: Date.now(),
-    });
+    this.panelProvider.postMessage({ type: 'error', source: 'extension', payload: { code: String(code), message }, timestamp: Date.now() });
   }
 }
