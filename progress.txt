@@ -293,6 +293,8 @@
 - `overviewDeriver.test.ts`（11 测试）— 纯函数派生逻辑全覆盖
 - `pipelineStreamRunner.test.ts`（5 测试）— 重试策略 + 错误分类
 
+**P0 补丁**：AiPipelineService 文件头补充完整数据流注释（14 行）+ 压缩辅助方法至 298 行
+
 **§13.5 步骤 7 自检清单**：
 - [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
 - [x] `npm run test`（49 tests passed，4 文件）
@@ -300,6 +302,7 @@
 - [x] 无 console.log 残留
 - [x] progress.txt 已更新
 - [x] FRONTEND_GUIDELINES.md §7 技术债务条目已标记修复
+- [x] 分支 `fix/code-quality-compliance`（6 个提交）已合并到 main
 
 ### 下一步：Phase 6 — 设计规则检查 + 导出
 - DRC 引擎

@@ -904,7 +904,9 @@ If no other instruction is given, the AI should help the user in this order:
 
 ## 20. Session Reminder
 
-At the beginning of each session, assume:
+At the beginning of each session, **first read `progress.txt`** to locate the current development progress and pending tasks.
+
+Then assume:
 
 * this repository is currently building a **VS Code extension-first AI EDA product**
 * the current plugin/product working name is **AI EDA Copilot**
