@@ -19,6 +19,7 @@ export function PanelApp(): React.ReactElement {
   const messages = useInputStore((s) => s.messages);
   const status = useInputStore((s) => s.status);
   const addMessage = useInputStore((s) => s.addMessage);
+  const appendToLastMessage = useInputStore((s) => s.appendToLastMessage);
   const setStatus = useInputStore((s) => s.setStatus);
   const setIsGenerating = useInputStore((s) => s.setIsGenerating);
 
@@ -28,8 +29,12 @@ export function PanelApp(): React.ReactElement {
       const msg = event.data;
       switch (msg.type) {
         case 'ai_chat_response':
-          addMessage('assistant', msg.payload.content);
-          if (!msg.payload.isStreaming) setIsGenerating(false);
+          if (msg.payload.isStreaming) {
+            appendToLastMessage(msg.payload.content);
+          } else {
+            addMessage('assistant', msg.payload.content);
+            setIsGenerating(false);
+          }
           break;
         case 'generation_status':
           setStatus(`${msg.payload.stage}: ${msg.payload.progress}%`);
@@ -42,7 +47,7 @@ export function PanelApp(): React.ReactElement {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [addMessage, setStatus, setIsGenerating]);
+  }, [addMessage, appendToLastMessage, setStatus, setIsGenerating]);
 
   const handleOpenReport = useCallback(() => {
     const message: PanelToExtension = createMessage(

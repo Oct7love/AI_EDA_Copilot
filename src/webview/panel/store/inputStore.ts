@@ -25,6 +25,7 @@ interface InputState {
   updateFormField: <K extends keyof FormInputData>(key: K, value: FormInputData[K]) => void;
   setFormData: (data: Partial<FormInputData>) => void;
   addMessage: (role: 'user' | 'assistant', content: string) => void;
+  appendToLastMessage: (content: string) => void;
   setStatus: (status: string) => void;
   setIsGenerating: (v: boolean) => void;
   clearChat: () => void;
@@ -58,6 +59,23 @@ export const useInputStore = create<InputState>((set) => ({
         { id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, role, content, timestamp: Date.now() },
       ],
     })),
+
+  appendToLastMessage: (content) =>
+    set((state) => {
+      const messages = [...state.messages];
+      const last = messages[messages.length - 1];
+      if (last && last.role === 'assistant') {
+        messages[messages.length - 1] = { ...last, content: last.content + content };
+        return { messages };
+      }
+      // 末尾没有 assistant 消息则新建
+      return {
+        messages: [
+          ...state.messages,
+          { id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, role: 'assistant', content, timestamp: Date.now() },
+        ],
+      };
+    }),
 
   setStatus: (status) => set({ status }),
   setIsGenerating: (isGenerating) => set({ isGenerating }),

@@ -130,7 +130,7 @@ export function classifyError(err: unknown): AiErrorCode {
 
   const msg = err instanceof Error ? err.message.toLowerCase() : '';
   if (msg.includes('timeout') || msg.includes('timed out')) return 'TIMEOUT';
-  if (msg.includes('network') || msg.includes('econnrefused') || msg.includes('fetch failed')) return 'NETWORK_ERROR';
+  if (msg.includes('network') || msg.includes('econnrefused') || msg.includes('fetch failed') || msg.includes('premature close')) return 'NETWORK_ERROR';
 
   return 'UNKNOWN';
 }

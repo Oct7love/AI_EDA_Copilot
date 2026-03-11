@@ -18,18 +18,19 @@ export interface StreamRunnerDeps {
 
 type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
-/** 带重试的流式调用，返回完整文本 */
+/** 带重试的流式调用，返回完整文本。showInPanel 控制是否将原始内容流式显示到 Panel */
 export async function streamWithRetry(
   deps: StreamRunnerDeps,
   model: string,
   messages: ChatMessage[],
+  showInPanel = false,
 ): Promise<string> {
   const retry = createRetryState();
   let lastError: Error | null = null;
 
   while (retry.attempt < retry.maxAttempts) {
     try {
-      return await doStream(deps, model, messages);
+      return await doStream(deps, model, messages, showInPanel);
     } catch (err) {
       const code = err instanceof AiAdapterError ? err.code : classifyError(err);
       retry.lastError = code;
@@ -68,28 +69,31 @@ async function doStream(
   deps: StreamRunnerDeps,
   model: string,
   messages: ChatMessage[],
+  showInPanel: boolean,
 ): Promise<string> {
   let fullText = '';
 
-  const streamBuffer = new StreamBuffer((content) => {
-    deps.panelProvider.postMessage({
-      type: 'ai_chat_response',
-      source: 'extension',
-      payload: { content, isStreaming: true },
-      timestamp: Date.now(),
-    });
-  });
+  const streamBuffer = showInPanel
+    ? new StreamBuffer((content) => {
+        deps.panelProvider.postMessage({
+          type: 'ai_chat_response',
+          source: 'extension',
+          payload: { content, isStreaming: true },
+          timestamp: Date.now(),
+        });
+      })
+    : null;
 
   try {
     const stream = deps.adapter.stream({ model, messages, stream: true });
     for await (const chunk of stream) {
       if (chunk.content) {
         fullText += chunk.content;
-        streamBuffer.push(chunk.content);
+        streamBuffer?.push(chunk.content);
       }
     }
   } finally {
-    streamBuffer.dispose();
+    streamBuffer?.dispose();
   }
 
   return fullText;

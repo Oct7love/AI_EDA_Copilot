@@ -99,6 +99,12 @@ export class AiPipelineService {
       }
 
       this.sendPanelStatus('requirement', 0);
+      this.panelProvider.postMessage({
+        type: 'ai_chat_response',
+        source: 'extension',
+        payload: { content: '正在分析需求，请稍候...', isStreaming: false },
+        timestamp: Date.now(),
+      });
       const { model, language } = this.getConfig();
       const inputText = request.rawText ?? '';
 
@@ -112,7 +118,7 @@ export class AiPipelineService {
       const spec = parseRequirementSpec(fullText, request);
 
       if (!spec) {
-        this.sendPanelError('PARSE_ERROR', 'AI 输出 JSON 解析失败');
+        await this.runFallbackChat(inputText, model);
         return;
       }
 
@@ -294,5 +300,13 @@ export class AiPipelineService {
 
   private sendPanelError(code: AiErrorCode | string, message: string): void {
     this.panelProvider.postMessage({ type: 'error', source: 'extension', payload: { code: String(code), message }, timestamp: Date.now() });
+  }
+
+  /** 非硬件需求时的普通对话回退，直接流式回答不强制 JSON */
+  private async runFallbackChat(inputText: string, model: string): Promise<void> {
+    const messages = [
+      { role: 'user' as const, content: inputText },
+    ];
+    await streamWithRetry(this.streamDeps, model, messages, true);
   }
 }
