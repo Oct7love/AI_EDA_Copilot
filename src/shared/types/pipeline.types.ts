@@ -14,4 +14,5 @@ export type ReportSection =
   | 'bom'
   | 'schematic_intent'
   | 'pcb_layout'
-  | 'procurement';
+  | 'procurement'
+  | 'design_review';

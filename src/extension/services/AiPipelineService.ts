@@ -1,35 +1,40 @@
 /**
- * AI 管线编排器，按顺序执行四阶段串联：
+ * AI 管线编排器，按顺序执行五阶段串联：
  *
  * 数据流：
  *   AnalysisRequest → runRequirementStage() → RequirementSpec
  *     → runBomStage(spec) → BOMItem[] + ProcurementItem[]
  *     → runSchematicStage(spec, bomItems) → SchematicIntent
  *     → runPcbLayoutStage(spec, bomItems, schematic) → PCBLayoutPlan
+ *     → runDesignReviewStage(spec, bomItems, schematic, pcbLayout) → DesignReviewResult
  *
- * 各阶段可独立调用，通过 lastSpec/lastBomItems/lastSchematic 缓存传递
+ * 各阶段可独立调用，通过 lastSpec/lastBomItems/lastSchematic/lastPcbLayout 缓存传递
  * 错误处理：handleStageError() → sendPanelError() → 中断后续阶段
  * 并发控制：isRunning flag 防止并行任务
  * 流式调用：委托 pipelineStreamRunner.streamWithRetry()（含 10 次 / 15s 重试）
+ * 设计审查：先执行本地规则引擎（RuleEngineService），再调用 AI 深度审查，合并结果
  */
 import * as vscode from 'vscode';
-import type { AnalysisRequest, RequirementSpec, BOMItem, SchematicIntent, PipelineStage, AiErrorCode } from '@shared/types';
+import type { AnalysisRequest, RequirementSpec, BOMItem, SchematicIntent, PCBLayoutPlan, PipelineStage, AiErrorCode } from '@shared/types';
 import { AiAdapter, AiAdapterError, classifyError } from '../adapters/AiAdapter';
 import { buildRequirementPrompt } from '../prompts/requirementPrompt';
 import { buildBomPrompt } from '../prompts/bomPrompt';
 import { buildSchematicPrompt } from '../prompts/schematicPrompt';
 import { buildPcbLayoutPrompt } from '../prompts/pcbLayoutPrompt';
+import { buildDesignReviewPrompt } from '../prompts/designReviewPrompt';
 import { ProcurementService } from './ProcurementService';
 import {
   parseSchematicIntent,
   parsePcbLayoutPlan,
   parseBomItems,
   parseRequirementSpec,
+  parseDesignReviewFindings,
 } from './artifactParsers';
 import type { SidePanelProvider } from '../providers/SidePanelProvider';
 import { ReportPanelManager } from '../providers/ReportPanelManager';
 import { deriveOverview } from './overviewDeriver';
 import { streamWithRetry, type StreamRunnerDeps } from './pipelineStreamRunner';
+import { runAllRules } from './RuleEngineService';
 
 export class AiPipelineService {
   private isRunning = false;
@@ -39,6 +44,7 @@ export class AiPipelineService {
   lastSpec: RequirementSpec | null = null;
   lastBomItems: BOMItem[] = [];
   lastSchematic: SchematicIntent | null = null;
+  lastPcbLayout: PCBLayoutPlan | null = null;
 
   constructor(
     private readonly secrets: vscode.SecretStorage,
@@ -273,6 +279,7 @@ export class AiPipelineService {
       }
 
       this.outputChannel.appendLine(`[Pipeline] parsed pcb layout: ${plan.zones.length} zones, ${plan.placements.length} placements`);
+      this.lastPcbLayout = plan;
 
       ReportPanelManager.postMessage({
         type: 'pcb_layout_data',
@@ -284,13 +291,83 @@ export class AiPipelineService {
       this.panelProvider.postMessage({
         type: 'ai_chat_response',
         source: 'extension',
-        payload: { content: `全部分析完成！需求 → BOM(${bomItems.length}项) → 原理图 → PCB 布局，请查看 Report Tab。`, isStreaming: false },
+        payload: { content: 'PCB 布局规划完成，开始设计审查...', isStreaming: false },
         timestamp: Date.now(),
       });
       this.sendPanelStatus('pcb_layout', 100);
-      this.outputChannel.appendLine('[Pipeline] pcb_layout stage completed — full pipeline done');
+      this.outputChannel.appendLine('[Pipeline] pcb_layout stage completed');
+
+      await this.runDesignReviewStage(spec, bomItems, schematic, plan);
     } catch (err) {
       this.handleStageError('pcb_layout', err);
+    }
+  }
+
+  async runDesignReviewStage(
+    spec: RequirementSpec,
+    bomItems: BOMItem[],
+    schematic: SchematicIntent | null,
+    pcbLayout: PCBLayoutPlan | null,
+  ): Promise<void> {
+    try {
+      this.sendPanelStatus('design_review', 0);
+      this.outputChannel.appendLine('[Pipeline] design_review stage started');
+
+      // Phase 1: 本地规则引擎检查
+      this.sendPanelStatus('design_review', 10);
+      const ruleResult = runAllRules({
+        bomItems,
+        schematicIntent: schematic,
+        pcbLayoutPlan: pcbLayout,
+        procurementItems: [],
+      });
+      this.outputChannel.appendLine(
+        `[Pipeline] rule engine: ${ruleResult.findings.length} findings (${ruleResult.summary.criticalCount}C/${ruleResult.summary.warningCount}W/${ruleResult.summary.infoCount}I)`,
+      );
+
+      // Phase 2: AI 深度设计审查
+      this.sendPanelStatus('design_review', 30);
+      const { model, language } = this.getConfig();
+      const messages = buildDesignReviewPrompt(spec, bomItems, schematic, pcbLayout, language);
+      const fullText = await streamWithRetry(this.streamDeps, model, messages);
+
+      this.sendPanelStatus('design_review', 80);
+      const aiFindings = parseDesignReviewFindings(fullText);
+
+      // 合并规则 findings + AI findings
+      const allFindings = [...ruleResult.findings, ...(aiFindings ?? [])];
+      const summary = {
+        criticalCount: allFindings.filter((f) => f.severity === 'critical').length,
+        warningCount: allFindings.filter((f) => f.severity === 'warning').length,
+        infoCount: allFindings.filter((f) => f.severity === 'info').length,
+      };
+
+      const designReviewResult = {
+        findings: allFindings,
+        summary,
+        reviewedAt: new Date().toISOString(),
+      };
+
+      ReportPanelManager.postMessage({
+        type: 'design_review_data',
+        source: 'extension',
+        payload: { designReviewResult },
+        timestamp: Date.now(),
+      });
+
+      this.panelProvider.postMessage({
+        type: 'ai_chat_response',
+        source: 'extension',
+        payload: {
+          content: `全部分析完成！需求 → BOM(${bomItems.length}项) → 原理图 → PCB 布局 → 设计审查(${allFindings.length}项发现)，请查看 Report Tab。`,
+          isStreaming: false,
+        },
+        timestamp: Date.now(),
+      });
+      this.sendPanelStatus('design_review', 100);
+      this.outputChannel.appendLine(`[Pipeline] design_review stage completed — ${allFindings.length} total findings — full pipeline done`);
+    } catch (err) {
+      this.handleStageError('design_review', err);
     }
   }
 

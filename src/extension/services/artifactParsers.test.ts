@@ -10,6 +10,7 @@ import {
   parseSchematicIntent,
   parsePcbLayoutPlan,
   parseBomItems,
+  parseDesignReviewFindings,
 } from './artifactParsers';
 
 // ── extractJson ───────────────────────────────────────
@@ -230,5 +231,58 @@ describe('parseBomItems', () => {
 
   it('非数组结构返回 null', () => {
     expect(parseBomItems('{"notBom": true}')).toBeNull();
+  });
+});
+
+// ── parseDesignReviewFindings ─────────────────────────
+
+describe('parseDesignReviewFindings', () => {
+  it('解析数组格式 findings', () => {
+    const text = JSON.stringify([
+      {
+        id: 'AI-001', category: 'power_ripple', severity: 'warning',
+        title: 'Test', description: 'Test desc', affectedComponents: ['U1'],
+        suggestion: 'Fix it', stage: 'cross_stage', ruleSource: 'ai_analysis', confidence: 0.8,
+      },
+    ]);
+    const result = parseDesignReviewFindings(text);
+    expect(result).not.toBeNull();
+    expect(result).toHaveLength(1);
+    expect(result![0].ruleSource).toBe('ai_analysis');
+  });
+
+  it('解析 { findings: [...] } 格式', () => {
+    const text = JSON.stringify({
+      findings: [
+        { id: 'AI-002', category: 'thermal', severity: 'info', title: 'T', description: 'D', suggestion: 'S', stage: 'bom' },
+      ],
+    });
+    const result = parseDesignReviewFindings(text);
+    expect(result).not.toBeNull();
+    expect(result).toHaveLength(1);
+  });
+
+  it('自动补充默认字段', () => {
+    const text = JSON.stringify([
+      { id: 'AI-003', category: 'layout', severity: 'warning', title: 'T', description: 'D', suggestion: 'S', stage: 'pcb_layout' },
+    ]);
+    const result = parseDesignReviewFindings(text);
+    expect(result![0].affectedComponents).toEqual([]);
+    expect(result![0].confidence).toBe(0.7);
+    expect(result![0].ruleSource).toBe('ai_analysis');
+  });
+
+  it('非数组结构返回 null', () => {
+    expect(parseDesignReviewFindings('{"notFindings": true}')).toBeNull();
+  });
+
+  it('从 fenced code block 中提取', () => {
+    const json = JSON.stringify([
+      { id: 'AI-004', category: 'general', severity: 'info', title: 'T', description: 'D', suggestion: 'S', stage: 'bom' },
+    ]);
+    const text = `Here are the findings:\n\`\`\`json\n${json}\n\`\`\``;
+    const result = parseDesignReviewFindings(text);
+    expect(result).not.toBeNull();
+    expect(result).toHaveLength(1);
   });
 });

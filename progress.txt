@@ -304,7 +304,100 @@
 - [x] FRONTEND_GUIDELINES.md §7 技术债务条目已标记修复
 - [x] 分支 `fix/code-quality-compliance`（6 个提交）已合并到 main
 
-### 下一步：Phase 6 — 设计规则检查 + 导出
-- DRC 引擎
+## 2026-03-16
+
+### Phase 6A — 规则引擎 + AI 设计审查 + DesignReview UI ✅
+
+**范围**：规则引擎 + AI 深度审查 + Design Review Tab。Stale 状态管理 / Regenerate / 报告导出留 6B。
+
+**新增类型定义**：
+- [x] designReview.types.ts：DesignReviewFinding / DesignReviewResult / Rule / RuleContext / RuleCategory
+- [x] pipeline.types.ts 扩展 ReportSection: 'design_review'
+- [x] messages.types.ts 扩展 ExtensionToReport: 'design_review_data'
+
+**规则引擎**（17 条规则）：
+- [x] 硬性规则 HR-001 ~ HR-006（critical）
+  - HR-001: 封装字段不可为空
+  - HR-002: 位号不可重复
+  - HR-003: 电源引脚必须有去耦电容
+  - HR-004: MCU 复位引脚需要复位电路
+  - HR-005: 晶振需要配对负载电容
+  - HR-006: 电源走线宽度不低于安全阈值
+- [x] 警告规则 WR-001 ~ WR-006（warning）
+  - WR-001: 去耦电容应就近放置于电源引脚
+  - WR-002: 高速信号走线建议等长匹配
+  - WR-003: 天线区域应保持净空
+  - WR-004: 大功率器件建议增加散热过孔
+  - WR-005: 差分对建议保持间距一致
+  - WR-006: 板边不建议放置精密模拟器件
+- [x] 嘉立创兼容性规则 JR-001 ~ JR-005（warning/info）
+  - JR-001: 封装是否在嘉立创常见封装库中
+  - JR-002: 器件缺少嘉立创料号
+  - JR-003: 嘉立创库存不足
+  - JR-004: 安全间距低于嘉立创工艺能力
+  - JR-005: 最小线宽/线距低于嘉立创工艺
+- [x] ruleRegistry.ts 注册表 + RuleEngineService.ts 执行引擎
+
+**AI 设计审查**：
+- [x] designReviewPrompt.ts：输入全部上游产物（Spec+BOM+Schematic+PCB），输出 DesignReviewFinding[] JSON
+- [x] 审查维度：电源纹波 / 信号完整性 / 热设计 / 封装匹配 / 功能完整性
+- [x] artifactParsers.ts 新增 parseDesignReviewFindings()
+
+**管线扩展**（五阶段串联）：
+- [x] AiPipelineService 新增 runDesignReviewStage()
+- [x] 逻辑：先执行本地规则引擎 → 再调用 AI 深度审查 → 合并 findings
+- [x] PCB 阶段完成后自动串联到 design_review
+- [x] 新增 lastPcbLayout 缓存
+- [x] 管线完成提示包含审查发现数量
+
+**Report Store + UI**：
+- [x] reportStore.ts 新增 designReviewResult 状态 + setter
+- [x] ReportApp.tsx 新增 Design Review Tab + 消息处理
+- [x] DesignReviewSection.tsx：摘要统计 + severity 过滤器 + Finding 列表
+- [x] FindingCard.tsx：severity 色条 + 标题 + 描述 + 受影响元件 + 建议 + ruleSource 标识
+- [x] DesignReviewSection.css：使用 CSS 变量 --eda-status-* 语义色
+
+**测试**（47 新增，96 总计）：
+- [x] hardRules.test.ts（13 测试）
+- [x] warningRules.test.ts（12 测试）
+- [x] jlcRules.test.ts（13 测试）
+- [x] RuleEngineService.test.ts（4 测试）
+- [x] artifactParsers.test.ts 新增 parseDesignReviewFindings（5 测试）
+
+**文件清单**（13 新建 + 8 修改 = 21 文件）：
+
+| 操作 | 文件 |
+|------|------|
+| 新建 | src/shared/types/designReview.types.ts |
+| 新建 | src/extension/rules/hardRules.ts |
+| 新建 | src/extension/rules/warningRules.ts |
+| 新建 | src/extension/rules/jlcRules.ts |
+| 新建 | src/extension/rules/ruleRegistry.ts |
+| 新建 | src/extension/services/RuleEngineService.ts |
+| 新建 | src/extension/prompts/designReviewPrompt.ts |
+| 新建 | src/webview/report/components/DesignReviewSection.tsx + .css |
+| 新建 | src/webview/report/components/FindingCard.tsx |
+| 新建 | src/extension/rules/hardRules.test.ts |
+| 新建 | src/extension/rules/warningRules.test.ts |
+| 新建 | src/extension/rules/jlcRules.test.ts |
+| 新建 | src/extension/services/RuleEngineService.test.ts |
+| 修改 | src/shared/types/index.ts |
+| 修改 | src/shared/types/pipeline.types.ts |
+| 修改 | src/shared/types/messages.types.ts |
+| 修改 | src/extension/services/AiPipelineService.ts |
+| 修改 | src/extension/services/artifactParsers.ts + .test.ts |
+| 修改 | src/webview/report/store/reportStore.ts |
+| 修改 | src/webview/report/ReportApp.tsx |
+
+**§13.5 步骤 7 自检清单**：
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（96 tests passed，8 文件）
+- [x] `npx @vscode/vsce package`（9 files, 251.13 KB）
+- [x] 无 console.log 残留
+- [x] progress.txt 已更新
+
+### 下一步：Phase 6B — Stale 状态管理 + Regenerate + 报告导出
+- ArtifactState stale 状态管理 + 级联失效
+- Regenerate 按钮 + 部分重算逻辑
 - 报告导出（Markdown / JSON / CSV）
 - 完整端到端测试

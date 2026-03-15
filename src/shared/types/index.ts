@@ -82,3 +82,15 @@ export type {
   RoutingGuideline,
   LayoutConstraint,
 } from './pcb.types';
+
+export type {
+  FindingCategory,
+  FindingSeverity,
+  RuleSource,
+  FindingStage,
+  DesignReviewFinding,
+  DesignReviewResult,
+  RuleContext,
+  RuleCategory,
+  Rule,
+} from './designReview.types';

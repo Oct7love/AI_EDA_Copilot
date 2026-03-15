@@ -1,6 +1,6 @@
 /** Report Tab Zustand Store，管理报告数据、流式内容和编辑态 */
 import { create } from 'zustand';
-import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem, SchematicIntent, PCBLayoutPlan } from '../../../shared/types';
+import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem, SchematicIntent, PCBLayoutPlan, DesignReviewResult } from '../../../shared/types';
 
 interface ReportState {
   requirementSpec: RequirementSpec | null;
@@ -9,6 +9,7 @@ interface ReportState {
   procurementItems: ProcurementItem[];
   schematicIntent: SchematicIntent | null;
   pcbLayoutPlan: PCBLayoutPlan | null;
+  designReviewResult: DesignReviewResult | null;
   streamContent: string;
   isStreaming: boolean;
 
@@ -20,6 +21,7 @@ interface ReportState {
   setProcurementItems: (items: ProcurementItem[]) => void;
   setSchematicIntent: (data: SchematicIntent) => void;
   setPcbLayoutPlan: (data: PCBLayoutPlan) => void;
+  setDesignReviewResult: (data: DesignReviewResult) => void;
   setStreamContent: (content: string) => void;
   appendStreamContent: (chunk: string) => void;
   setIsStreaming: (v: boolean) => void;
@@ -35,6 +37,7 @@ export const useReportStore = create<ReportState>((set) => ({
   procurementItems: [],
   schematicIntent: null,
   pcbLayoutPlan: null,
+  designReviewResult: null,
   streamContent: '',
   isStreaming: false,
   editingFields: {},
@@ -45,6 +48,7 @@ export const useReportStore = create<ReportState>((set) => ({
   setProcurementItems: (items) => set({ procurementItems: items }),
   setSchematicIntent: (data) => set({ schematicIntent: data }),
   setPcbLayoutPlan: (data) => set({ pcbLayoutPlan: data }),
+  setDesignReviewResult: (data) => set({ designReviewResult: data }),
   setStreamContent: (content) => set({ streamContent: content }),
   appendStreamContent: (chunk) => set((s) => ({ streamContent: s.streamContent + chunk })),
   setIsStreaming: (v) => set({ isStreaming: v }),
@@ -59,7 +63,7 @@ export const useReportStore = create<ReportState>((set) => ({
   reset: () =>
     set({
       requirementSpec: null, overview: null, bomItems: [], procurementItems: [],
-      schematicIntent: null, pcbLayoutPlan: null,
+      schematicIntent: null, pcbLayoutPlan: null, designReviewResult: null,
       streamContent: '', isStreaming: false, editingFields: {},
     }),
 }));

@@ -7,6 +7,7 @@ import type { BOMItem } from './bom.types';
 import type { ProcurementItem } from './procurement.types';
 import type { SchematicIntent } from './schematic.types';
 import type { PCBLayoutPlan } from './pcb.types';
+import type { DesignReviewResult } from './designReview.types';
 
 /** 消息方向标识 */
 export type MessageSource = 'panel' | 'report' | 'extension';
@@ -48,7 +49,8 @@ export type ExtensionToReport =
   | BaseMessage<'bom_data', { bomItems: BOMItem[]; isStreaming: boolean }>
   | BaseMessage<'procurement_data', { procurementItems: ProcurementItem[] }>
   | BaseMessage<'schematic_data', { schematicIntent: SchematicIntent }>
-  | BaseMessage<'pcb_layout_data', { pcbLayoutPlan: PCBLayoutPlan }>;
+  | BaseMessage<'pcb_layout_data', { pcbLayoutPlan: PCBLayoutPlan }>
+  | BaseMessage<'design_review_data', { designReviewResult: DesignReviewResult }>;
 
 // ─── 报告页 → Extension ──────────────────────────────
 
