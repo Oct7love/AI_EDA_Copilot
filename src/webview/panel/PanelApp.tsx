@@ -1,10 +1,11 @@
-/** Side Panel 主组件，管理消息监听、输入模式切换和全局布局 */
+/** Side Panel 主组件，管理消息监听、输入模式切换、会话管理和全局布局 */
 import React, { useEffect, useCallback } from 'react';
 import { useInputStore } from './store/inputStore';
 import { InputModeToggle } from './components/InputModeToggle';
 import { ChatInput } from './components/ChatInput';
 import { FormInput } from './components/FormInput';
 import { TemplateSelector } from './components/TemplateSelector';
+import { SessionBar } from './components/SessionBar';
 import vscodeApi from '../shared/vscodeApi';
 import type { ExtensionToPanel, PanelToExtension } from '../../shared/types';
 import { createMessage } from '../../shared/types';
@@ -13,6 +14,7 @@ import './PanelApp.css';
 /**
  * 侧边栏根组件
  * Phase 2：三模式输入（Chat / Form / Template）+ Zustand 状态管理
+ * 会话管理：保存 / 切换 / 新建
  */
 export function PanelApp(): React.ReactElement {
   const mode = useInputStore((s) => s.mode);
@@ -22,6 +24,9 @@ export function PanelApp(): React.ReactElement {
   const appendToLastMessage = useInputStore((s) => s.appendToLastMessage);
   const setStatus = useInputStore((s) => s.setStatus);
   const setIsGenerating = useInputStore((s) => s.setIsGenerating);
+  const loadSession = useInputStore((s) => s.loadSession);
+  const clearChat = useInputStore((s) => s.clearChat);
+  const setSessionInfo = useInputStore((s) => s.setSessionInfo);
 
   // 监听 Extension Host → Panel 消息
   useEffect(() => {
@@ -43,11 +48,26 @@ export function PanelApp(): React.ReactElement {
           setStatus(`Error: ${msg.payload.message}`);
           setIsGenerating(false);
           break;
+        case 'session_loaded':
+          loadSession({
+            messages: msg.payload.conversation,
+            mode: msg.payload.inputMode,
+            formData: msg.payload.formData,
+            sessionId: msg.payload.sessionId,
+            sessionName: msg.payload.name,
+          });
+          break;
+        case 'session_cleared':
+          clearChat();
+          break;
+        case 'session_saved':
+          setSessionInfo(msg.payload.sessionId, msg.payload.name);
+          break;
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [addMessage, appendToLastMessage, setStatus, setIsGenerating]);
+  }, [addMessage, appendToLastMessage, setStatus, setIsGenerating, loadSession, clearChat, setSessionInfo]);
 
   const handleOpenReport = useCallback(() => {
     const message: PanelToExtension = createMessage(
@@ -61,6 +81,7 @@ export function PanelApp(): React.ReactElement {
     <div className="panel-container">
       <header className="panel-header">
         <h2>AI EDA Copilot</h2>
+        <SessionBar />
         <button className="btn-secondary" onClick={handleOpenReport}>
           Open Report
         </button>

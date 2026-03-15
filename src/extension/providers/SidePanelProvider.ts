@@ -13,6 +13,7 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
 
   private _view?: vscode.WebviewView;
   private _onMessage?: (message: PanelToExtension) => void;
+  private _messageInterceptors: ((msg: ExtensionToPanel) => void)[] = [];
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -21,9 +22,15 @@ export class SidePanelProvider implements vscode.WebviewViewProvider {
     this._onMessage = handler;
   }
 
+  /** 注册发出消息拦截器（用于 SessionManager 捕获 assistant 消息） */
+  public addMessageInterceptor(fn: (msg: ExtensionToPanel) => void): void {
+    this._messageInterceptors.push(fn);
+  }
+
   /** 向侧边栏发送消息 */
   public postMessage(message: ExtensionToPanel): void {
     this._view?.webview.postMessage(message);
+    for (const fn of this._messageInterceptors) fn(message);
   }
 
   /** VS Code 调用：创建 Webview 内容 */

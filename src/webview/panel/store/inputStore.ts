@@ -1,16 +1,9 @@
-/** Side Panel Zustand Store，管理输入状态、消息列表和生成状态 */
+/** Side Panel Zustand Store，管理输入状态、消息列表、会话信息和生成状态 */
 import { create } from 'zustand';
-import type { FormInputData } from '../../../shared/types';
+import type { FormInputData, ChatMessage } from '../../../shared/types';
 import { createEmptyFormData } from '../../../shared/types';
 
 export type InputMode = 'chat' | 'form';
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-}
 
 interface InputState {
   mode: InputMode;
@@ -19,6 +12,8 @@ interface InputState {
   messages: ChatMessage[];
   status: string;
   isGenerating: boolean;
+  sessionId: string | null;
+  sessionName: string | null;
 
   setMode: (mode: InputMode) => void;
   setChatText: (text: string) => void;
@@ -28,6 +23,8 @@ interface InputState {
   appendToLastMessage: (content: string) => void;
   setStatus: (status: string) => void;
   setIsGenerating: (v: boolean) => void;
+  setSessionInfo: (id: string | null, name: string | null) => void;
+  loadSession: (data: { messages: ChatMessage[]; mode: InputMode; formData?: FormInputData; sessionId: string; sessionName: string }) => void;
   clearChat: () => void;
 }
 
@@ -38,6 +35,8 @@ export const useInputStore = create<InputState>((set) => ({
   messages: [],
   status: '',
   isGenerating: false,
+  sessionId: null,
+  sessionName: null,
 
   setMode: (mode) => set({ mode }),
   setChatText: (chatText) => set({ chatText }),
@@ -80,5 +79,22 @@ export const useInputStore = create<InputState>((set) => ({
   setStatus: (status) => set({ status }),
   setIsGenerating: (isGenerating) => set({ isGenerating }),
 
-  clearChat: () => set({ messages: [], chatText: '', status: '' }),
+  setSessionInfo: (sessionId, sessionName) => set({ sessionId, sessionName }),
+
+  loadSession: (data) => set({
+    messages: data.messages,
+    mode: data.mode,
+    formData: data.formData ?? createEmptyFormData(),
+    sessionId: data.sessionId,
+    sessionName: data.sessionName,
+    chatText: '',
+    status: '',
+    isGenerating: false,
+  }),
+
+  clearChat: () => set({
+    messages: [], chatText: '', status: '',
+    sessionId: null, sessionName: null,
+    formData: createEmptyFormData(),
+  }),
 }));

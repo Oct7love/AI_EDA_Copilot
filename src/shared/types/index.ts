@@ -94,3 +94,10 @@ export type {
   RuleCategory,
   Rule,
 } from './designReview.types';
+
+export type {
+  ChatMessage,
+  SessionArtifacts,
+  SessionData,
+  SessionIndexEntry,
+} from './session.types';
