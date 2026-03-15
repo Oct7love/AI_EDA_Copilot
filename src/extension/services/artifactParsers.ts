@@ -3,7 +3,7 @@
  * 职责：从 AI 原始文本输出中提取、解析、校验、修复 JSON 产物
  * 不做：网络请求、状态管理、消息推送
  */
-import type { RequirementSpec, BOMItem, SchematicIntent, PCBLayoutPlan } from '@shared/types';
+import type { RequirementSpec, BOMItem, SchematicIntent, PCBLayoutPlan, DesignReviewFinding } from '@shared/types';
 import type { AnalysisRequest } from '@shared/types';
 
 // ── 通用 JSON 提取 ────────────────────────────────────
@@ -96,6 +96,20 @@ export function parseBomItems(text: string): BOMItem[] | null {
       item.status = item.status ?? 'pending_confirmation';
     }
     return items as BOMItem[];
+  });
+}
+
+/** 解析 DesignReviewFinding[] JSON — AI 设计审查结果 */
+export function parseDesignReviewFindings(text: string): DesignReviewFinding[] | null {
+  return parseJsonArtifact<DesignReviewFinding[]>(text, (parsed) => {
+    const items = Array.isArray(parsed) ? parsed : parsed.findings ?? null;
+    if (!Array.isArray(items)) return null;
+    for (const item of items) {
+      item.affectedComponents = item.affectedComponents ?? [];
+      item.confidence = item.confidence ?? 0.7;
+      item.ruleSource = 'ai_analysis';
+    }
+    return items as DesignReviewFinding[];
   });
 }
 

@@ -10,6 +10,7 @@ import { BomSection } from './components/BomSection';
 import { ProcurementSection } from './components/ProcurementSection';
 import { SchematicSection } from './components/SchematicSection';
 import { PcbLayoutSection } from './components/PcbLayoutSection';
+import { DesignReviewSection } from './components/DesignReviewSection';
 import './ReportApp.css';
 
 const TABS: { id: ReportSection; label: string }[] = [
@@ -19,13 +20,14 @@ const TABS: { id: ReportSection; label: string }[] = [
   { id: 'schematic_intent', label: 'Schematic' },
   { id: 'pcb_layout', label: 'PCB Layout' },
   { id: 'procurement', label: 'Procurement' },
+  { id: 'design_review', label: 'Design Review' },
 ];
 
 export function ReportApp(): React.ReactElement {
   const [activeTab, setActiveTab] = React.useState<ReportSection>('overview');
   const {
     setRequirementSpec, setOverview, setBomItems, setProcurementItems,
-    setSchematicIntent, setPcbLayoutPlan,
+    setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult,
     appendStreamContent, setIsStreaming, streamContent,
   } = useReportStore();
 
@@ -53,6 +55,9 @@ export function ReportApp(): React.ReactElement {
         case 'pcb_layout_data':
           setPcbLayoutPlan(msg.payload.pcbLayoutPlan);
           break;
+        case 'design_review_data':
+          setDesignReviewResult(msg.payload.designReviewResult);
+          break;
         case 'report_stream_end':
           setIsStreaming(false);
           break;
@@ -60,7 +65,7 @@ export function ReportApp(): React.ReactElement {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, appendStreamContent, setIsStreaming]);
+  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult, appendStreamContent, setIsStreaming]);
 
   const handleExport = (format: 'csv' | 'markdown' | 'json') => {
     const message: ReportToExtension = createMessage('export_request', 'report', { format, section: activeTab });
@@ -81,6 +86,8 @@ export function ReportApp(): React.ReactElement {
         return <PcbLayoutSection />;
       case 'procurement':
         return <ProcurementSection />;
+      case 'design_review':
+        return <DesignReviewSection />;
       default:
         return (
           <div className="section-placeholder">

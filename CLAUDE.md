@@ -125,6 +125,7 @@ Examples:
 * `SchematicIntent`
 * `PCBLayoutPlan`
 * `ProcurementPlan`
+* `DesignReviewResult`
 
 ---
 

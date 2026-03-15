@@ -1,0 +1,205 @@
+/* DesignReviewSection + FindingCard 样式 */
+
+.dr-empty {
+  padding: var(--eda-space-6);
+  text-align: center;
+  color: var(--eda-fg-muted);
+}
+
+.dr-root {
+  padding: var(--eda-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-4);
+}
+
+/* 摘要统计 */
+.dr-summary h3 {
+  margin-bottom: var(--eda-space-2);
+}
+
+.dr-stats {
+  display: flex;
+  gap: var(--eda-space-3);
+  flex-wrap: wrap;
+}
+
+.dr-stat {
+  padding: var(--eda-space-1) var(--eda-space-3);
+  border-radius: var(--eda-radius-sm);
+  font-weight: 600;
+  font-size: 0.85em;
+}
+
+.dr-stat-critical {
+  background: color-mix(in srgb, var(--eda-status-critical) 20%, transparent);
+  color: var(--eda-status-critical);
+}
+
+.dr-stat-warning {
+  background: color-mix(in srgb, var(--eda-status-warning) 20%, transparent);
+  color: var(--eda-status-warning);
+}
+
+.dr-stat-info {
+  background: color-mix(in srgb, var(--eda-status-info) 20%, transparent);
+  color: var(--eda-status-info);
+}
+
+.dr-stat-total {
+  background: var(--eda-bg-hover);
+  color: var(--eda-fg-secondary);
+}
+
+.dr-time {
+  margin-top: var(--eda-space-2);
+  font-size: 0.8em;
+  color: var(--eda-fg-muted);
+}
+
+/* 过滤器 */
+.dr-filters {
+  display: flex;
+  gap: var(--eda-space-2);
+}
+
+.dr-filter-btn {
+  padding: var(--eda-space-1) var(--eda-space-3);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  background: transparent;
+  color: var(--eda-fg-secondary);
+  cursor: pointer;
+  font-size: 0.85em;
+}
+
+.dr-filter-btn:hover {
+  background: var(--eda-bg-hover);
+}
+
+.dr-filter-active {
+  background: var(--eda-accent);
+  color: var(--eda-button-fg);
+  border-color: var(--eda-accent);
+}
+
+.dr-filter-count {
+  margin-left: var(--eda-space-1);
+  opacity: 0.7;
+}
+
+/* Finding 列表 */
+.dr-findings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-3);
+}
+
+.dr-no-match {
+  text-align: center;
+  color: var(--eda-fg-muted);
+  padding: var(--eda-space-4);
+}
+
+/* Finding 卡片 */
+.finding-card {
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-md);
+  padding: var(--eda-space-3) var(--eda-space-4);
+  border-left: 3px solid var(--eda-border);
+}
+
+.finding-card.finding-critical {
+  border-left-color: var(--eda-status-critical);
+}
+
+.finding-card.finding-warning {
+  border-left-color: var(--eda-status-warning);
+}
+
+.finding-card.finding-info {
+  border-left-color: var(--eda-status-info);
+}
+
+.finding-header {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-2);
+  margin-bottom: var(--eda-space-2);
+}
+
+.finding-badge {
+  padding: 2px var(--eda-space-2);
+  border-radius: var(--eda-radius-sm);
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.finding-badge.finding-critical {
+  background: color-mix(in srgb, var(--eda-status-critical) 20%, transparent);
+  color: var(--eda-status-critical);
+}
+
+.finding-badge.finding-warning {
+  background: color-mix(in srgb, var(--eda-status-warning) 20%, transparent);
+  color: var(--eda-status-warning);
+}
+
+.finding-badge.finding-info {
+  background: color-mix(in srgb, var(--eda-status-info) 20%, transparent);
+  color: var(--eda-status-info);
+}
+
+.finding-title {
+  font-weight: 600;
+  flex: 1;
+}
+
+.finding-source {
+  font-size: 0.75em;
+  color: var(--eda-fg-muted);
+  padding: 2px var(--eda-space-2);
+  background: var(--eda-bg-hover);
+  border-radius: var(--eda-radius-sm);
+}
+
+.finding-desc {
+  color: var(--eda-fg-secondary);
+  font-size: 0.9em;
+  margin-bottom: var(--eda-space-2);
+  line-height: 1.5;
+}
+
+.finding-components {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--eda-space-1);
+  margin-bottom: var(--eda-space-2);
+  font-size: 0.85em;
+}
+
+.finding-label {
+  color: var(--eda-fg-muted);
+  font-size: 0.85em;
+}
+
+.finding-chip {
+  padding: 1px var(--eda-space-2);
+  background: var(--eda-bg-hover);
+  border-radius: var(--eda-radius-sm);
+  font-family: var(--eda-font-mono);
+  font-size: 0.8em;
+}
+
+.finding-suggestion {
+  font-size: 0.85em;
+  color: var(--eda-fg-secondary);
+  line-height: 1.5;
+}
+
+.finding-confidence {
+  margin-top: var(--eda-space-2);
+  font-size: 0.75em;
+  color: var(--eda-fg-muted);
+}
