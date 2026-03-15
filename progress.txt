@@ -396,8 +396,39 @@
 - [x] 无 console.log 残留
 - [x] progress.txt 已更新
 
-### 下一步：Phase 6B — Stale 状态管理 + Regenerate + 报告导出
-- ArtifactState stale 状态管理 + 级联失效
-- Regenerate 按钮 + 部分重算逻辑
-- 报告导出（Markdown / JSON / CSV）
-- 完整端到端测试
+### 历史对话管理 — 保存 + 切换 + 新建 ✅
+
+**功能**：会话持久化，支持保存当前分析会话（对话 + 全部产物）、新建空白会话、切换历史会话。
+
+**存储方案**：
+- 工作区 `.ai-eda/sessions/` 目录（JSON 文件，用户可见，可 git 跟踪）
+- 无工作区时回退到 VS Code globalState
+
+**新增类型**：
+- [x] session.types.ts：ChatMessage / SessionArtifacts / SessionData / SessionIndexEntry
+- [x] messages.types.ts 扩展 6 个 PanelToExtension + 4 个 ExtensionToPanel + 1 个 ExtensionToReport 消息类型
+
+**Extension 侧服务**：
+- [x] SessionStorageService.ts：文件读写 + globalState 回退 + 写入串行化
+- [x] SessionManager.ts：编排层（对话镜像 + 保存/加载/新建/切换 + 自动保存）
+- [x] SidePanelProvider.ts：新增消息拦截器机制（捕获 assistant 消息用于对话镜像）
+- [x] AiPipelineService.ts：新增 onPipelineComplete 回调
+- [x] activate.ts：实例化会话服务 + 6 个消息 handler + 对话镜像接线
+
+**UI**：
+- [x] SessionBar.tsx + .css：侧边栏 header 内嵌会话管理栏（当前会话名 + 下拉历史列表 + 新建/保存按钮）
+- [x] PanelApp.tsx：集成 SessionBar + 处理 session_loaded/session_cleared/session_saved 消息
+- [x] ReportApp.tsx：处理 session_cleared 消息（reset report store）
+- [x] inputStore.ts：ChatMessage 提升为共享类型 + sessionId/sessionName 状态 + loadSession action
+
+**§13.5 步骤 7 自检清单**：
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（96 tests passed，8 文件）
+- [x] `npx @vscode/vsce package`（9 files, 253.75 KB）
+- [x] 无 console.log 残留
+- [x] progress.txt 已更新
+- [x] 分支 `feat/session-management` worktree 开发
+
+### 下一步
+- Phase 6B — Stale 状态管理 + Regenerate + 报告导出
+- SessionStorageService / SessionManager 单元测试补充

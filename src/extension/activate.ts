@@ -1,11 +1,13 @@
 /**
- * 插件入口，注册 Provider / 命令 / 消息路由，不含业务逻辑
+ * 插件入口，注册 Provider / 命令 / 消息路由 / 会话管理，不含业务逻辑
  */
 import * as vscode from 'vscode';
 import { SidePanelProvider } from './providers/SidePanelProvider';
 import { ReportPanelManager } from './providers/ReportPanelManager';
 import { InputService } from './services/InputService';
 import { AiPipelineService } from './services/AiPipelineService';
+import { SessionStorageService } from './services/SessionStorageService';
+import { SessionManager } from './services/SessionManager';
 import { exportBomCsv } from './export/bomCsvExporter';
 import { registerCommands } from './commands';
 
@@ -28,6 +30,29 @@ export function activate(context: vscode.ExtensionContext): void {
     sidePanelProvider,
   );
 
+  // ── 会话管理 ──
+  const sessionStorage = new SessionStorageService(context);
+  const sessionManager = new SessionManager(
+    sessionStorage,
+    pipeline,
+    sidePanelProvider,
+    context.extensionUri,
+    outputChannel,
+  );
+
+  // 管线完成后自动保存会话
+  pipeline.onPipelineComplete = () => {
+    sessionManager.autoSave();
+  };
+
+  // 拦截 assistant 消息用于对话镜像
+  sidePanelProvider.addMessageInterceptor((msg) => {
+    if (msg.type === 'ai_chat_response' && !msg.payload.isStreaming) {
+      sessionManager.mirrorAssistantMessage(msg.payload.content);
+    }
+  });
+
+  // ── Side Panel 消息路由 ──
   sidePanelProvider.onMessage((message) => {
     outputChannel.appendLine(`[panel→ext] ${message.type}`);
 
@@ -42,6 +67,10 @@ export function activate(context: vscode.ExtensionContext): void {
           ? inputService.fromForm(JSON.parse(text))
           : inputService.fromNaturalLanguage(text);
 
+        // 对话镜像：记录用户消息
+        sessionManager.mirrorUserMessage(text);
+        sessionManager.setInputMode(mode);
+
         outputChannel.appendLine(`[InputService] ${request.inputType} → rawText=${request.rawText?.slice(0, 80)}`);
         pipeline.runRequirementStage(request);
         break;
@@ -49,10 +78,62 @@ export function activate(context: vscode.ExtensionContext): void {
 
       case 'select_template': {
         const request = inputService.fromTemplate(message.payload.templateId);
+        sessionManager.mirrorUserMessage(`[模板] ${message.payload.templateId}`);
         outputChannel.appendLine(`[InputService] template → ${request.templateId}`);
         pipeline.runRequirementStage(request);
         break;
       }
+
+      // ── 会话管理消息 ──
+      case 'session_list':
+        sessionManager.listSessions().then((sessions) => {
+          sidePanelProvider.postMessage({
+            type: 'session_list_response',
+            source: 'extension',
+            payload: { sessions },
+            timestamp: Date.now(),
+          });
+        });
+        break;
+
+      case 'session_save':
+        sessionManager.saveCurrentSession(message.payload?.name);
+        break;
+
+      case 'session_new':
+        sessionManager.newSession();
+        break;
+
+      case 'session_switch':
+        sessionManager.switchSession(message.payload.sessionId);
+        break;
+
+      case 'session_delete':
+        sessionManager.deleteSession(message.payload.sessionId).then(() => {
+          // 删除后刷新列表
+          sessionManager.listSessions().then((sessions) => {
+            sidePanelProvider.postMessage({
+              type: 'session_list_response',
+              source: 'extension',
+              payload: { sessions },
+              timestamp: Date.now(),
+            });
+          });
+        });
+        break;
+
+      case 'session_rename':
+        sessionStorage.renameSession(message.payload.sessionId, message.payload.name).then(() => {
+          sessionManager.listSessions().then((sessions) => {
+            sidePanelProvider.postMessage({
+              type: 'session_list_response',
+              source: 'extension',
+              payload: { sessions },
+              timestamp: Date.now(),
+            });
+          });
+        });
+        break;
     }
   });
 

@@ -8,6 +8,8 @@ import type { ProcurementItem } from './procurement.types';
 import type { SchematicIntent } from './schematic.types';
 import type { PCBLayoutPlan } from './pcb.types';
 import type { DesignReviewResult } from './designReview.types';
+import type { SessionIndexEntry, ChatMessage } from './session.types';
+import type { FormInputData } from './input.types';
 
 /** 消息方向标识 */
 export type MessageSource = 'panel' | 'report' | 'extension';
@@ -29,7 +31,13 @@ export type PanelToExtension =
   | BaseMessage<'open_report', { projectId: string; schemeId: string }>
   | BaseMessage<'switch_mode', { mode: 'chat' | 'form' }>
   | BaseMessage<'regenerate', { projectId: string; schemeId: string; feedback: string }>
-  | BaseMessage<'start_bom', void>;
+  | BaseMessage<'start_bom', void>
+  | BaseMessage<'session_list', void>
+  | BaseMessage<'session_save', { name?: string }>
+  | BaseMessage<'session_new', void>
+  | BaseMessage<'session_switch', { sessionId: string }>
+  | BaseMessage<'session_delete', { sessionId: string }>
+  | BaseMessage<'session_rename', { sessionId: string; name: string }>;
 
 // ─── Extension → 侧边栏 ─────────────────────────────
 
@@ -37,7 +45,11 @@ export type ExtensionToPanel =
   | BaseMessage<'ai_chat_response', { content: string; isStreaming: boolean }>
   | BaseMessage<'ai_question', { question: string; options?: string[] }>
   | BaseMessage<'generation_status', { stage: PipelineStage; progress: number }>
-  | BaseMessage<'error', { code: string; message: string }>;
+  | BaseMessage<'error', { code: string; message: string }>
+  | BaseMessage<'session_list_response', { sessions: SessionIndexEntry[] }>
+  | BaseMessage<'session_loaded', { sessionId: string; name: string; conversation: ChatMessage[]; inputMode: 'chat' | 'form'; formData?: FormInputData }>
+  | BaseMessage<'session_cleared', void>
+  | BaseMessage<'session_saved', { sessionId: string; name: string }>;
 
 // ─── Extension → 报告页 ──────────────────────────────
 
@@ -50,7 +62,8 @@ export type ExtensionToReport =
   | BaseMessage<'procurement_data', { procurementItems: ProcurementItem[] }>
   | BaseMessage<'schematic_data', { schematicIntent: SchematicIntent }>
   | BaseMessage<'pcb_layout_data', { pcbLayoutPlan: PCBLayoutPlan }>
-  | BaseMessage<'design_review_data', { designReviewResult: DesignReviewResult }>;
+  | BaseMessage<'design_review_data', { designReviewResult: DesignReviewResult }>
+  | BaseMessage<'session_cleared', void>;
 
 // ─── 报告页 → Extension ──────────────────────────────
 

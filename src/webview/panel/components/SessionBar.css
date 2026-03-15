@@ -1,0 +1,126 @@
+/* SessionBar 会话管理栏样式 */
+
+.session-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-1);
+  position: relative;
+  flex: 1;
+  margin: 0 var(--eda-space-2);
+}
+
+.session-current {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-1);
+  padding: 2px var(--eda-space-2);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  cursor: pointer;
+  font-size: 0.8em;
+  color: var(--eda-fg-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+.session-current:hover {
+  background: var(--eda-bg-hover);
+}
+
+.session-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.session-arrow {
+  font-size: 0.65em;
+  opacity: 0.6;
+}
+
+.session-btn {
+  padding: 2px var(--eda-space-2);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  background: transparent;
+  color: var(--eda-fg-secondary);
+  cursor: pointer;
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.session-btn:hover {
+  background: var(--eda-bg-hover);
+  color: var(--eda-fg-primary);
+}
+
+/* 下拉列表 */
+.session-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--eda-space-1);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-md);
+  background: var(--eda-bg-primary);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: var(--eda-space-2) var(--eda-space-3);
+  cursor: pointer;
+  gap: var(--eda-space-2);
+}
+
+.session-item:hover {
+  background: var(--eda-bg-hover);
+}
+
+.session-item-active {
+  background: color-mix(in srgb, var(--eda-accent) 15%, transparent);
+}
+
+.session-item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.session-item-name {
+  font-size: 0.85em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-item-date {
+  font-size: 0.7em;
+  color: var(--eda-fg-muted);
+}
+
+.session-item-delete {
+  background: transparent;
+  border: none;
+  color: var(--eda-fg-muted);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 0 var(--eda-space-1);
+  opacity: 0;
+}
+
+.session-item:hover .session-item-delete {
+  opacity: 1;
+}
+
+.session-item-delete:hover {
+  color: var(--eda-status-critical);
+}

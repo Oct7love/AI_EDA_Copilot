@@ -28,7 +28,7 @@ export function ReportApp(): React.ReactElement {
   const {
     setRequirementSpec, setOverview, setBomItems, setProcurementItems,
     setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult,
-    appendStreamContent, setIsStreaming, streamContent,
+    appendStreamContent, setIsStreaming, streamContent, reset,
   } = useReportStore();
 
   useEffect(() => {
@@ -61,11 +61,14 @@ export function ReportApp(): React.ReactElement {
         case 'report_stream_end':
           setIsStreaming(false);
           break;
+        case 'session_cleared':
+          reset();
+          break;
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult, appendStreamContent, setIsStreaming]);
+  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult, appendStreamContent, setIsStreaming, reset]);
 
   const handleExport = (format: 'csv' | 'markdown' | 'json') => {
     const message: ReportToExtension = createMessage('export_request', 'report', { format, section: activeTab });

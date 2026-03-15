@@ -46,6 +46,9 @@ export class AiPipelineService {
   lastSchematic: SchematicIntent | null = null;
   lastPcbLayout: PCBLayoutPlan | null = null;
 
+  /** 管线全部完成后的回调（由 SessionManager 接线用于自动保存） */
+  onPipelineComplete?: () => void;
+
   constructor(
     private readonly secrets: vscode.SecretStorage,
     private readonly extensionUri: vscode.Uri,
@@ -366,6 +369,7 @@ export class AiPipelineService {
       });
       this.sendPanelStatus('design_review', 100);
       this.outputChannel.appendLine(`[Pipeline] design_review stage completed — ${allFindings.length} total findings — full pipeline done`);
+      this.onPipelineComplete?.();
     } catch (err) {
       this.handleStageError('design_review', err);
     }
