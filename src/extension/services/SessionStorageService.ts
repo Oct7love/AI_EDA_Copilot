@@ -6,6 +6,7 @@
  */
 import * as vscode from 'vscode';
 import type { SessionData, SessionIndexEntry } from '@shared/types';
+import { migrateSessionVersions } from './versionStore';
 
 const DIR_NAME = '.ai-eda';
 const SESSIONS_DIR = 'sessions';
@@ -68,13 +69,22 @@ export class SessionStorageService {
     return this.context.globalState.get<SessionIndexEntry[]>(GS_INDEX_KEY, []);
   }
 
+  /** 规整旧会话：补齐 versions 字段（仅内存，落盘交由下次正常写入） */
+  private normalize(data: SessionData | null): SessionData | null {
+    if (!data) return null;
+    data.versions = migrateSessionVersions(data);
+    return data;
+  }
+
   async loadSession(id: string): Promise<SessionData | null> {
     const root = this.getStorageRoot();
     if (root) {
       const fileUri = vscode.Uri.joinPath(root, SESSIONS_DIR, `${id}.json`);
-      return this.readJson<SessionData>(fileUri);
+      return this.normalize(await this.readJson<SessionData>(fileUri));
     }
-    return this.context.globalState.get<SessionData | null>(`${GS_DATA_PREFIX}${id}`, null);
+    return this.normalize(
+      this.context.globalState.get<SessionData | null>(`${GS_DATA_PREFIX}${id}`, null),
+    );
   }
 
   async saveSession(data: SessionData): Promise<void> {
