@@ -10,6 +10,7 @@ import type { PCBLayoutPlan } from './pcb.types';
 import type { DesignReviewResult } from './designReview.types';
 import type { SessionIndexEntry, ChatMessage } from './session.types';
 import type { FormInputData } from './input.types';
+import type { ArtifactState, ArtifactKey } from './artifactState.types';
 
 /** 消息方向标识 */
 export type MessageSource = 'panel' | 'report' | 'extension';
@@ -63,6 +64,7 @@ export type ExtensionToReport =
   | BaseMessage<'schematic_data', { schematicIntent: SchematicIntent }>
   | BaseMessage<'pcb_layout_data', { pcbLayoutPlan: PCBLayoutPlan }>
   | BaseMessage<'design_review_data', { designReviewResult: DesignReviewResult }>
+  | BaseMessage<'artifact_status', { state: ArtifactState }>
   | BaseMessage<'session_cleared', void>;
 
 // ─── 报告页 → Extension ──────────────────────────────
@@ -71,6 +73,7 @@ export type ReportToExtension =
   | BaseMessage<'export_request', { format: 'csv' | 'markdown' | 'json'; section?: ReportSection }>
   | BaseMessage<'open_external_link', { url: string }>
   | BaseMessage<'requirement_edit', { field: string; value: unknown }>
+  | BaseMessage<'regenerate_stage', { stage: ArtifactKey; mode: 'single' | 'cascade' }>
   | BaseMessage<'version_request', { projectId: string; version: number }>
   | BaseMessage<'bom_export', void>;
 

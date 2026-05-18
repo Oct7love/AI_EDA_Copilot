@@ -10,6 +10,7 @@ import type * as vscode from 'vscode';
 import type { ChatMessage, SessionData, SessionIndexEntry, SessionArtifacts } from '@shared/types';
 import type { SessionStorageService } from './SessionStorageService';
 import type { AiPipelineService } from './AiPipelineService';
+import type { ArtifactStateService } from './ArtifactStateService';
 import type { SidePanelProvider } from '../providers/SidePanelProvider';
 import { ReportPanelManager } from '../providers/ReportPanelManager';
 import { deriveOverview } from './overviewDeriver';
@@ -23,6 +24,8 @@ export class SessionManager {
   private conversationMirror: ChatMessage[] = [];
   private inputMode: 'chat' | 'form' = 'chat';
 
+  private artifactState?: ArtifactStateService;
+
   constructor(
     private readonly storage: SessionStorageService,
     private readonly pipeline: AiPipelineService,
@@ -30,6 +33,11 @@ export class SessionManager {
     private readonly extensionUri: vscode.Uri,
     private readonly outputChannel: vscode.OutputChannel,
   ) {}
+
+  /** 注入 ArtifactStateService（由 activate.ts 调用） */
+  setArtifactStateService(svc: ArtifactStateService): void {
+    this.artifactState = svc;
+  }
 
   // ─── 对话镜像 ─────────────────────────────────────────
 
@@ -116,6 +124,7 @@ export class SessionManager {
     this.pipeline.lastBomItems = [];
     this.pipeline.lastSchematic = null;
     this.pipeline.lastPcbLayout = null;
+    this.artifactState?.resetAll();
 
     // 通知 Panel 和 Report 清空
     this.panelProvider.postMessage({

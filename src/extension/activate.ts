@@ -9,7 +9,12 @@ import { AiPipelineService } from './services/AiPipelineService';
 import { SessionStorageService } from './services/SessionStorageService';
 import { SessionManager } from './services/SessionManager';
 import { exportBomCsv } from './export/bomCsvExporter';
+import { exportMarkdown } from './export/markdownExporter';
+import { exportJson } from './export/jsonExporter';
 import { registerCommands } from './commands';
+import { ArtifactStateService } from './services/ArtifactStateService';
+import { deriveOverview } from './services/overviewDeriver';
+import type { RequirementField, ArtifactKey, SessionArtifacts } from '@shared/types';
 
 const EXTENSION_ID = 'ai-eda-copilot';
 
@@ -30,6 +35,17 @@ export function activate(context: vscode.ExtensionContext): void {
     sidePanelProvider,
   );
 
+  // ── Artifact 状态管理 ──
+  const artifactState = new ArtifactStateService();
+  artifactState.onStateChange = (state) => {
+    ReportPanelManager.postMessage({
+      type: 'artifact_status',
+      source: 'extension',
+      payload: { state },
+      timestamp: Date.now(),
+    });
+  };
+
   // ── 会话管理 ──
   const sessionStorage = new SessionStorageService(context);
   const sessionManager = new SessionManager(
@@ -39,6 +55,9 @@ export function activate(context: vscode.ExtensionContext): void {
     context.extensionUri,
     outputChannel,
   );
+
+  // 注入 ArtifactStateService 到 SessionManager
+  sessionManager.setArtifactStateService(artifactState);
 
   // 管线完成后自动保存会话
   pipeline.onPipelineComplete = () => {
@@ -143,16 +162,40 @@ export function activate(context: vscode.ExtensionContext): void {
     { webviewOptions: { retainContextWhenHidden: true } }
   );
 
+  // ── 导出辅助：从管线缓存收集产物 ──
+  const collectArtifacts = (): SessionArtifacts => ({
+    requirementSpec: pipeline.lastSpec,
+    overview: pipeline.lastSpec ? deriveOverview(pipeline.lastSpec) : null,
+    bomItems: pipeline.lastBomItems,
+    procurementItems: [],
+    schematicIntent: pipeline.lastSchematic,
+    pcbLayoutPlan: pipeline.lastPcbLayout,
+    designReviewResult: null,
+  });
+
   // ── Report Panel 消息路由 ──
   ReportPanelManager.onMessage((message) => {
     outputChannel.appendLine(`[report→ext] ${message.type}`);
 
     switch (message.type) {
-      case 'export_request':
-        vscode.window.showInformationMessage(
-          `Export ${message.payload.format} — coming in Phase 7`
-        );
+      case 'export_request': {
+        const format = message.payload.format;
+        const pName = pipeline.lastSpec?.projectName?.value ?? 'untitled';
+        if (format === 'csv') {
+          if (pipeline.lastBomItems.length > 0) {
+            exportBomCsv(pipeline.lastBomItems);
+          } else {
+            vscode.window.showWarningMessage('暂无 BOM 数据，请先运行分析');
+          }
+        } else if (format === 'markdown') {
+          const arts = collectArtifacts();
+          exportMarkdown(arts, pName);
+        } else if (format === 'json') {
+          const arts = collectArtifacts();
+          exportJson(arts, pName);
+        }
         break;
+      }
       case 'open_external_link':
         vscode.env.openExternal(vscode.Uri.parse(message.payload.url));
         break;
@@ -163,6 +206,59 @@ export function activate(context: vscode.ExtensionContext): void {
           vscode.window.showWarningMessage('暂无 BOM 数据，请先运行分析');
         }
         break;
+
+      case 'requirement_edit': {
+        const { field, value } = message.payload;
+        if (!pipeline.lastSpec) {
+          outputChannel.appendLine('[requirement_edit] no spec to edit');
+          break;
+        }
+        // 更新 lastSpec 中对应字段
+        const spec = pipeline.lastSpec as unknown as Record<string, unknown>;
+        const fieldObj = spec[field];
+        if (fieldObj && typeof fieldObj === 'object' && 'value' in (fieldObj as RequirementField)) {
+          const rf = fieldObj as RequirementField;
+          rf.value = value as string;
+          rf.source = 'user_provided';
+          rf.status = 'confirmed';
+          rf.confidence = 1.0;
+        }
+
+        // 重新派生 overview 并推送
+        const overview = deriveOverview(pipeline.lastSpec);
+        ReportPanelManager.postMessage({
+          type: 'report_data',
+          source: 'extension',
+          payload: { report: { requirementSpec: pipeline.lastSpec, overview }, isStreaming: false },
+          timestamp: Date.now(),
+        });
+
+        // 级联标记下游 stale
+        artifactState.markStale('requirement');
+        outputChannel.appendLine(`[requirement_edit] field=${field}, downstream marked stale`);
+        break;
+      }
+
+      case 'regenerate_stage': {
+        const { stage } = message.payload;
+        outputChannel.appendLine(`[regenerate] stage=${stage}, mode=${message.payload.mode}`);
+
+        artifactState.markGenerating(stage);
+
+        // 接线：阶段完成后标记 valid
+        pipeline.onStageComplete = (completedStage: ArtifactKey) => {
+          artifactState.markValid(completedStage);
+        };
+
+        pipeline.regenerateFrom(stage).then(() => {
+          outputChannel.appendLine(`[regenerate] ${stage} completed`);
+          sessionManager.autoSave();
+        }).catch((err) => {
+          artifactState.markError(stage);
+          outputChannel.appendLine(`[regenerate] ${stage} error: ${err}`);
+        });
+        break;
+      }
     }
   });
 

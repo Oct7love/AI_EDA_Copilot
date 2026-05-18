@@ -2,11 +2,13 @@
 import React from 'react';
 import { useReportStore } from '../store/reportStore';
 import { PcbZoneMap } from './PcbZoneMap';
+import { StaleIndicator } from './StaleIndicator';
 import './PcbLayoutSection.css';
 
 /** PCB 布局规划板块 */
 export function PcbLayoutSection(): React.ReactElement {
   const plan = useReportStore((s) => s.pcbLayoutPlan);
+  const artifactStatus = useReportStore((s) => s.artifactStatus);
 
   if (!plan) {
     return (
@@ -20,6 +22,7 @@ export function PcbLayoutSection(): React.ReactElement {
 
   return (
     <div className="pcb-root">
+      <StaleIndicator stage="pcbLayout" status={artifactStatus?.pcbLayout ?? 'valid'} />
       {/* 板级参数 */}
       <div className="pcb-params">
         <div className="pcb-param-card">

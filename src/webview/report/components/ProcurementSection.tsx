@@ -4,6 +4,7 @@ import type { ProcurementItem } from '../../../shared/types';
 import { createMessage } from '../../../shared/types';
 import vscodeApi from '../../shared/vscodeApi';
 import { useReportStore } from '../store/reportStore';
+import { StaleIndicator } from './StaleIndicator';
 import './ProcurementSection.css';
 
 /** 兼容性配色 */
@@ -16,6 +17,7 @@ const COMPAT_CONFIG = {
 
 export function ProcurementSection(): React.ReactElement {
   const items = useReportStore((s) => s.procurementItems);
+  const artifactStatus = useReportStore((s) => s.artifactStatus);
   const [expandedAlt, setExpandedAlt] = useState<string | null>(null);
 
   // 统计
@@ -39,6 +41,7 @@ export function ProcurementSection(): React.ReactElement {
 
   return (
     <div className="proc-root">
+      <StaleIndicator stage="procurement" status={artifactStatus?.procurement ?? 'valid'} />
       {/* 兼容性概要 */}
       <div className="proc-summary">
         <h3 className="proc-summary-title">JLCPCB 兼容性</h3>

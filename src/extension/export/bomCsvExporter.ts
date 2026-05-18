@@ -3,6 +3,7 @@
  */
 import * as vscode from 'vscode';
 import type { BOMItem } from '@shared/types';
+import { csvEscape } from './exportUtils';
 
 /** 对齐嘉立创 SMT BOM 模板：Comment, Designator, Footprint, LCSC Part # */
 export async function exportBomCsv(bomItems: BOMItem[]): Promise<void> {
@@ -27,11 +28,4 @@ export async function exportBomCsv(bomItems: BOMItem[]): Promise<void> {
 
   await vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf-8'));
   vscode.window.showInformationMessage(`BOM 已导出到 ${uri.fsPath}`);
-}
-
-function csvEscape(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }

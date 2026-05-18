@@ -4,6 +4,7 @@ import { useReportStore } from '../store/reportStore';
 import { SchematicTextView } from './SchematicTextView';
 import { PinConnectionTable } from './PinConnectionTable';
 import { MermaidRenderer } from './MermaidRenderer';
+import { StaleIndicator } from './StaleIndicator';
 import './SchematicSection.css';
 
 type SchematicView = 'text' | 'diagram' | 'pins';
@@ -11,6 +12,7 @@ type SchematicView = 'text' | 'diagram' | 'pins';
 /** 原理图意图板块 — 三种展示形式切换 */
 export function SchematicSection(): React.ReactElement {
   const schematic = useReportStore((s) => s.schematicIntent);
+  const artifactStatus = useReportStore((s) => s.artifactStatus);
   const [activeView, setActiveView] = useState<SchematicView>('text');
 
   if (!schematic) {
@@ -32,6 +34,7 @@ export function SchematicSection(): React.ReactElement {
 
   return (
     <div className="schematic-root">
+      <StaleIndicator stage="schematic" status={artifactStatus?.schematic ?? 'valid'} />
       {/* 摘要统计 */}
       <div className="schematic-header">
         <div className="schematic-stats">

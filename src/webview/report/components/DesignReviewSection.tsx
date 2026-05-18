@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import type { FindingSeverity } from '../../../shared/types';
 import { useReportStore } from '../store/reportStore';
 import { FindingCard } from './FindingCard';
+import { StaleIndicator } from './StaleIndicator';
 import './DesignReviewSection.css';
 
 type FilterKey = 'all' | FindingSeverity;
@@ -16,6 +17,7 @@ const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
 
 export function DesignReviewSection(): React.ReactElement {
   const result = useReportStore((s) => s.designReviewResult);
+  const artifactStatus = useReportStore((s) => s.artifactStatus);
   const [filter, setFilter] = useState<FilterKey>('all');
 
   const filteredFindings = useMemo(() => {
@@ -36,6 +38,7 @@ export function DesignReviewSection(): React.ReactElement {
 
   return (
     <div className="dr-root">
+      <StaleIndicator stage="designReview" status={artifactStatus?.designReview ?? 'valid'} />
       {/* 摘要统计 */}
       <div className="dr-summary">
         <h3>设计审查结果</h3>

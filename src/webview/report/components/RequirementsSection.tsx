@@ -4,6 +4,7 @@ import type { RequirementField, FunctionalModule, OpenQuestion, FieldStatus } fr
 import { createMessage } from '../../../shared/types';
 import vscodeApi from '../../shared/vscodeApi';
 import { useReportStore } from '../store/reportStore';
+import { StaleIndicator } from './StaleIndicator';
 import './RequirementsSection.css';
 
 // ─── 工具组件 ────────────────────────────────────────
@@ -140,6 +141,7 @@ function FieldGroup({ title, collapsible = false, defaultCollapsed = false, chil
 
 export function RequirementsSection(): React.ReactElement {
   const spec = useReportStore((s) => s.requirementSpec);
+  const artifactStatus = useReportStore((s) => s.artifactStatus);
 
   if (!spec) {
     return (
@@ -151,6 +153,7 @@ export function RequirementsSection(): React.ReactElement {
 
   return (
     <div className="requirements-root">
+      <StaleIndicator stage="requirement" status={artifactStatus?.requirement ?? 'valid'} />
       {/* 核心字段 */}
       <FieldGroup title="Core Requirements">
         <FieldRow fieldKey="projectName" label="Project Name" field={spec.projectName} />

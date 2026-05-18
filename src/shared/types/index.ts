@@ -101,3 +101,15 @@ export type {
   SessionData,
   SessionIndexEntry,
 } from './session.types';
+
+export type {
+  ArtifactStatus,
+  ArtifactKey,
+  ArtifactState,
+} from './artifactState.types';
+
+export {
+  DOWNSTREAM_MAP,
+  ALL_ARTIFACT_KEYS,
+  createInitialArtifactState,
+} from './artifactState.types';

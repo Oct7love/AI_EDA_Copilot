@@ -1,6 +1,6 @@
 /** Report Tab 主组件，管理 6-Tab 导航和消息路由 */
 import React, { useEffect } from 'react';
-import type { ExtensionToReport, ReportToExtension, ReportSection } from '../../shared/types';
+import type { ExtensionToReport, ReportToExtension, ReportSection, ArtifactKey } from '../../shared/types';
 import { createMessage } from '../../shared/types';
 import vscodeApi from '../shared/vscodeApi';
 import { useReportStore } from './store/reportStore';
@@ -29,6 +29,7 @@ export function ReportApp(): React.ReactElement {
     setRequirementSpec, setOverview, setBomItems, setProcurementItems,
     setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult,
     appendStreamContent, setIsStreaming, streamContent, reset,
+    setArtifactStatus, artifactStatus,
   } = useReportStore();
 
   useEffect(() => {
@@ -61,6 +62,9 @@ export function ReportApp(): React.ReactElement {
         case 'report_stream_end':
           setIsStreaming(false);
           break;
+        case 'artifact_status':
+          setArtifactStatus(msg.payload.state);
+          break;
         case 'session_cleared':
           reset();
           break;
@@ -68,7 +72,23 @@ export function ReportApp(): React.ReactElement {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult, appendStreamContent, setIsStreaming, reset]);
+  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult, appendStreamContent, setIsStreaming, setArtifactStatus, reset]);
+
+  // Tab → ArtifactKey 映射（overview 无对应产物）
+  const tabToArtifact: Partial<Record<ReportSection, ArtifactKey>> = {
+    requirements: 'requirement', bom: 'bom', schematic_intent: 'schematic',
+    pcb_layout: 'pcbLayout', procurement: 'procurement', design_review: 'designReview',
+  };
+
+  const hasAnyStale = artifactStatus
+    ? Object.values(artifactStatus).some(s => s === 'stale')
+    : false;
+
+  const handleRegenerateAll = () => {
+    vscodeApi.postMessage(
+      createMessage('regenerate_stage', 'report', { stage: 'bom' as ArtifactKey, mode: 'cascade' })
+    );
+  };
 
   const handleExport = (format: 'csv' | 'markdown' | 'json') => {
     const message: ReportToExtension = createMessage('export_request', 'report', { format, section: activeTab });
@@ -108,22 +128,32 @@ export function ReportApp(): React.ReactElement {
   return (
     <div className="report-container">
       <nav className="report-tabs" role="tablist">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className={`tab-button ${activeTab === tab.id ? 'tab-active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map(tab => {
+          const artKey = tabToArtifact[tab.id];
+          const isStale = artKey && artifactStatus?.[artKey] === 'stale';
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`tab-button ${activeTab === tab.id ? 'tab-active' : ''} ${isStale ? 'tab-stale' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+              {isStale && <span className="tab-stale-dot" />}
+            </button>
+          );
+        })}
       </nav>
       <main className="report-content" role="tabpanel">
         {renderTabContent()}
       </main>
       <footer className="report-footer">
+        {hasAnyStale && (
+          <button className="btn-regenerate-all" onClick={handleRegenerateAll}>
+            Regenerate All
+          </button>
+        )}
         <button className="btn-export" onClick={() => handleExport('markdown')}>Export Markdown</button>
         <button className="btn-export" onClick={() => handleExport('json')}>Export JSON</button>
         <button className="btn-export" onClick={() => handleExport('csv')}>Export CSV</button>

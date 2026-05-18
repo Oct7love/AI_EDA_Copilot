@@ -5,10 +5,12 @@ import { createMessage } from '../../../shared/types';
 import vscodeApi from '../../shared/vscodeApi';
 import { useReportStore } from '../store/reportStore';
 import { BomRowDetail } from './BomRowDetail';
+import { StaleIndicator } from './StaleIndicator';
 import './BomSection.css';
 
 export function BomSection(): React.ReactElement {
   const bomItems = useReportStore((s) => s.bomItems);
+  const artifactStatus = useReportStore((s) => s.artifactStatus);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   if (bomItems.length === 0) {
@@ -33,6 +35,7 @@ export function BomSection(): React.ReactElement {
 
   return (
     <div className="bom-root">
+      <StaleIndicator stage="bom" status={artifactStatus?.bom ?? 'valid'} />
       {/* 摘要 + 导出 */}
       <div className="bom-header">
         <div className="bom-stats">

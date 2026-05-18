@@ -429,6 +429,90 @@
 - [x] progress.txt 已更新
 - [x] 分支 `feat/session-management` worktree 开发
 
+## 2026-03-25
+
+### Phase 6B — Stale 状态管理 + Regenerate + 报告导出 ✅
+
+**范围**：需求编辑后级联失效管理 + 用户驱动的局部/全部重新生成 + 完整报告导出（Markdown/JSON）
+
+**新增类型定义**：
+- [x] artifactState.types.ts：ArtifactStatus / ArtifactState / ArtifactKey / DOWNSTREAM_MAP / createInitialArtifactState
+
+**新增服务**：
+- [x] ArtifactStateService.ts（~100行）— Stale 状态管理 + 级联失效逻辑
+  - markStale(key) → 下游全部标记 stale（对齐 BACKEND_STRUCTURE §7.2）
+  - markGenerating / markValid / markError 状态转换
+  - onStateChange 回调 → 推送到 Report Webview
+  - resetAll() / setFromExisting() 用于会话切换
+
+**管线扩展**（AiPipelineService）：
+- [x] 新增 regenerateFrom(stage) 方法 — 从指定阶段开始 cascade 重新生成
+- [x] 新增 onStageComplete 回调 — 各阶段完成后通知 ArtifactStateService
+- [x] 复用已有 lastSpec/lastBomItems/lastSchematic/lastPcbLayout 缓存
+
+**消息协议扩展**（messages.types.ts）：
+- [x] ExtensionToReport: 'artifact_status' — 推送 ArtifactState 到 Report
+- [x] ReportToExtension: 'regenerate_stage' — 触发局部/全部重新生成
+
+**Extension 侧接线**（activate.ts）：
+- [x] requirement_edit handler — 更新 lastSpec 字段 + 重新派生 overview + 级联标记 stale
+- [x] regenerate_stage handler — markGenerating → 调用管线 → markValid
+- [x] export_request handler — 支持 csv/markdown/json 三种格式
+- [x] collectArtifacts() 辅助函数 — 从管线缓存收集 SessionArtifacts
+
+**Report 前端 UI**：
+- [x] StaleIndicator.tsx + .css — 三种状态横幅（stale 黄/generating 绿/error 红）+ Regenerate 按钮
+- [x] reportStore.ts 新增 artifactStatus 状态 + setArtifactStatus
+- [x] ReportApp.tsx — artifact_status 消息处理 + Tab stale 徽章 + Regenerate All 按钮
+- [x] 6 个 Section 组件集成 StaleIndicator：
+  - BomSection / SchematicSection / PcbLayoutSection / ProcurementSection / DesignReviewSection / RequirementsSection
+
+**报告导出系统**：
+- [x] exportUtils.ts — 共享文件名生成 + csvEscape 提取
+- [x] markdownExporter.ts（~240行）— 7章结构化 Markdown 全报告导出
+- [x] jsonExporter.ts（~45行）— JSON 全报告导出
+- [x] bomCsvExporter.ts 重构 — 复用 exportUtils.csvEscape
+
+**测试**（27 新增，123 总计）：
+- [x] ArtifactStateService.test.ts（18 测试）— 级联失效 + 状态转换 + 回调
+- [x] markdownExporter.test.ts（5 测试）— 空产物 + BOM 表格 + 设计审查分组
+- [x] jsonExporter.test.ts（4 测试）— JSON 有效性 + 字段完整性
+
+**文件清单**（9 新建 + 16 修改 = 25 文件）：
+
+| 操作 | 文件 |
+|------|------|
+| 新建 | src/shared/types/artifactState.types.ts |
+| 新建 | src/extension/services/ArtifactStateService.ts |
+| 新建 | src/extension/services/ArtifactStateService.test.ts |
+| 新建 | src/extension/export/exportUtils.ts |
+| 新建 | src/extension/export/markdownExporter.ts |
+| 新建 | src/extension/export/markdownExporter.test.ts |
+| 新建 | src/extension/export/jsonExporter.ts |
+| 新建 | src/extension/export/jsonExporter.test.ts |
+| 新建 | src/webview/report/components/StaleIndicator.tsx + .css |
+| 修改 | src/shared/types/index.ts |
+| 修改 | src/shared/types/messages.types.ts |
+| 修改 | src/extension/activate.ts |
+| 修改 | src/extension/services/AiPipelineService.ts |
+| 修改 | src/extension/services/SessionManager.ts |
+| 修改 | src/extension/export/bomCsvExporter.ts |
+| 修改 | src/webview/report/store/reportStore.ts |
+| 修改 | src/webview/report/ReportApp.tsx + .css |
+| 修改 | src/webview/report/components/BomSection.tsx |
+| 修改 | src/webview/report/components/SchematicSection.tsx |
+| 修改 | src/webview/report/components/PcbLayoutSection.tsx |
+| 修改 | src/webview/report/components/ProcurementSection.tsx |
+| 修改 | src/webview/report/components/DesignReviewSection.tsx |
+| 修改 | src/webview/report/components/RequirementsSection.tsx |
+
+**§13.5 步骤 7 自检清单**：
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（123 tests passed，11 文件）
+- [x] `npx @vscode/vsce package`（9 files, 257.34 KB）
+- [x] 无 console.log 残留
+- [x] progress.txt 已更新
+
 ### 下一步
-- Phase 6B — Stale 状态管理 + Regenerate + 报告导出
+- Phase 7 — 本地存储 + 报告版本管理 + 代码分析输入
 - SessionStorageService / SessionManager 单元测试补充

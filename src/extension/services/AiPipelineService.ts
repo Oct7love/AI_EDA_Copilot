@@ -15,7 +15,7 @@
  * 设计审查：先执行本地规则引擎（RuleEngineService），再调用 AI 深度审查，合并结果
  */
 import * as vscode from 'vscode';
-import type { AnalysisRequest, RequirementSpec, BOMItem, SchematicIntent, PCBLayoutPlan, PipelineStage, AiErrorCode } from '@shared/types';
+import type { AnalysisRequest, RequirementSpec, BOMItem, SchematicIntent, PCBLayoutPlan, PipelineStage, AiErrorCode, ArtifactKey } from '@shared/types';
 import { AiAdapter, AiAdapterError, classifyError } from '../adapters/AiAdapter';
 import { buildRequirementPrompt } from '../prompts/requirementPrompt';
 import { buildBomPrompt } from '../prompts/bomPrompt';
@@ -48,6 +48,9 @@ export class AiPipelineService {
 
   /** 管线全部完成后的回调（由 SessionManager 接线用于自动保存） */
   onPipelineComplete?: () => void;
+
+  /** 单阶段完成后的回调（由 activate.ts 接线用于更新 ArtifactState） */
+  onStageComplete?: (stage: ArtifactKey) => void;
 
   constructor(
     private readonly secrets: vscode.SecretStorage,
@@ -214,6 +217,7 @@ export class AiPipelineService {
         timestamp: Date.now(),
       });
       this.sendPanelStatus('bom', 100);
+      this.onStageComplete?.('bom');
       this.outputChannel.appendLine('[Pipeline] bom + procurement stage completed');
 
       await this.runSchematicStage(spec, bomItems);
@@ -256,6 +260,7 @@ export class AiPipelineService {
         timestamp: Date.now(),
       });
       this.sendPanelStatus('schematic', 100);
+      this.onStageComplete?.('schematic');
       this.outputChannel.appendLine('[Pipeline] schematic stage completed');
 
       await this.runPcbLayoutStage(spec, bomItems, schematic);
@@ -298,6 +303,7 @@ export class AiPipelineService {
         timestamp: Date.now(),
       });
       this.sendPanelStatus('pcb_layout', 100);
+      this.onStageComplete?.('pcbLayout');
       this.outputChannel.appendLine('[Pipeline] pcb_layout stage completed');
 
       await this.runDesignReviewStage(spec, bomItems, schematic, plan);
@@ -368,6 +374,7 @@ export class AiPipelineService {
         timestamp: Date.now(),
       });
       this.sendPanelStatus('design_review', 100);
+      this.onStageComplete?.('designReview');
       this.outputChannel.appendLine(`[Pipeline] design_review stage completed — ${allFindings.length} total findings — full pipeline done`);
       this.onPipelineComplete?.();
     } catch (err) {
@@ -389,5 +396,77 @@ export class AiPipelineService {
       { role: 'user' as const, content: inputText },
     ];
     await streamWithRetry(this.streamDeps, model, messages, true);
+  }
+
+  /**
+   * 从指定阶段开始重新生成（cascade 模式：含所有下游）
+   * 前置条件：对应的上游缓存数据必须存在
+   */
+  async regenerateFrom(stage: ArtifactKey): Promise<void> {
+    if (this.isRunning) {
+      this.sendPanelError('INVALID_REQUEST', '已有分析任务运行中，请等待完成');
+      return;
+    }
+
+    if (!this.lastSpec) {
+      this.sendPanelError('INVALID_REQUEST', '没有需求数据，请先运行分析');
+      return;
+    }
+
+    this.isRunning = true;
+
+    try {
+      if (!(await this.ensureApiKey())) {
+        this.sendPanelError('AUTH_ERROR', 'API Key 配置已取消');
+        return;
+      }
+
+      this.panelProvider.postMessage({
+        type: 'ai_chat_response',
+        source: 'extension',
+        payload: { content: `正在重新生成 ${stage}...`, isStreaming: false },
+        timestamp: Date.now(),
+      });
+
+      switch (stage) {
+        case 'bom':
+          await this.runBomStage(this.lastSpec);
+          break;
+        case 'schematic':
+          await this.runSchematicStage(this.lastSpec, this.lastBomItems);
+          break;
+        case 'pcbLayout':
+          await this.runPcbLayoutStage(this.lastSpec, this.lastBomItems, this.lastSchematic!);
+          break;
+        case 'procurement': {
+          // 单独重跑采购匹配（不调用 AI）
+          this.sendPanelStatus('procurement', 0);
+          const procItems = await this.procurement.matchAll(this.lastBomItems, (cur, total) => {
+            this.sendPanelStatus('procurement', Math.round((cur / total) * 100));
+          });
+          ReportPanelManager.postMessage({
+            type: 'procurement_data',
+            source: 'extension',
+            payload: { procurementItems: procItems },
+            timestamp: Date.now(),
+          });
+          this.sendPanelStatus('procurement', 100);
+          this.onStageComplete?.('procurement');
+          break;
+        }
+        case 'designReview':
+          await this.runDesignReviewStage(
+            this.lastSpec, this.lastBomItems,
+            this.lastSchematic, this.lastPcbLayout,
+          );
+          break;
+        default:
+          this.sendPanelError('INVALID_REQUEST', `不支持从 ${stage} 阶段重新生成`);
+      }
+    } catch (err) {
+      this.handleStageError(stage, err);
+    } finally {
+      this.isRunning = false;
+    }
   }
 }

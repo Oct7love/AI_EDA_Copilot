@@ -85,3 +85,34 @@
 .btn-export:hover {
   background: var(--eda-bg-hover);
 }
+
+/* Tab stale 状态标记 */
+.tab-stale {
+  position: relative;
+}
+
+.tab-stale-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--eda-status-warning);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* Regenerate All 按钮 */
+.btn-regenerate-all {
+  padding: var(--eda-space-1) var(--eda-space-3);
+  border: 1px solid var(--eda-status-warning);
+  border-radius: var(--eda-radius-sm);
+  background: transparent;
+  color: var(--eda-status-warning);
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: auto;
+}
+
+.btn-regenerate-all:hover {
+  background: rgba(204, 167, 0, 0.12);
+}
