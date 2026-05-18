@@ -13,7 +13,7 @@ export const MAX_VERSIONS = 10;
 export function appendVersion(
   versions: ReportVersion[],
   snapshot: ReportVersion,
-  max: number = MAX_VERSIONS,
+  max: number = MAX_VERSIONS, // 默认 MAX_VERSIONS；保留显式参数供测试与未来需求
 ): ReportVersion[] {
   const next = [...versions, snapshot];
   return next.length > max ? next.slice(next.length - max) : next;

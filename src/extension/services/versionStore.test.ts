@@ -76,14 +76,18 @@ describe('removeVersion', () => {
     const input = [makeVersion('a'), makeVersion('b')];
     removeVersion(input, 'a');
     expect(input).toHaveLength(2);
+    expect(input.map(v => v.id)).toEqual(['a', 'b']);
   });
 });
 
 describe('buildVersionLabel', () => {
-  it('格式为 v{n} · 本地时间', () => {
-    const label = buildVersionLabel(3, '2026-05-18T15:10:00.000Z');
-    expect(label.startsWith('v3 · ')).toBe(true);
+  it('格式包含 v{n} · YYYY-MM-DD HH:mm 结构，月日补零', () => {
+    // UTC midnight — 本地日期与 UTC 日期在任意时区都一致
+    const label = buildVersionLabel(3, '2026-01-05T00:00:00.000Z');
+    expect(label).toMatch(/^v3 · \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
     expect(label).toContain('2026');
+    expect(label).toContain('-01-'); // 月补零：1月 = '01'
+    expect(label).toContain('-05 '); // 日补零：5号 = '05'
   });
 });
 
