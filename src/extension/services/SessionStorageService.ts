@@ -72,6 +72,7 @@ export class SessionStorageService {
   /** 规整旧会话：补齐 versions 字段（仅内存，落盘交由下次正常写入） */
   private normalize(data: SessionData | null): SessionData | null {
     if (!data) return null;
+    // globalState 返回引用，原地赋值安全：迁移仅补齐缺失的 versions，下次 saveSession 会完整序列化新对象
     data.versions = migrateSessionVersions(data);
     return data;
   }
