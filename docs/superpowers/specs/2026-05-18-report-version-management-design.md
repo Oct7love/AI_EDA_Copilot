@@ -152,8 +152,8 @@ export function buildVersionLabel(index: number, createdAt: string): string;
 ## 8. 导出 / 另存（复用 Phase 6B）
 
 - `export_version` 路由到 Phase 6B 既有导出器（`markdownExporter` / `jsonExporter` / `bomCsvExporter`），但输入 artifacts 改为指定版本的快照。
-- 为满足 §9.5「另存到任意路径」验收：`export_version` 处理时使用 `vscode.window.showSaveDialog` 让用户选目标路径。
-- 导出器与调用方的具体写入边界（导出器是否自行写文件、能否接收目标 URI）在实现计划阶段依据 Phase 6B 现有导出器签名确定；本设计仅约束：复用 Phase 6B 导出逻辑、输入 artifacts 替换为指定版本快照、目标路径来自 save dialog。
+- 已核实：Phase 6B 的 `exportMarkdown(artifacts, projectName)` / `exportJson(artifacts, projectName)` / `exportBomCsv(bomItems)` **内部均已调用 `vscode.window.showSaveDialog`**，「另存到任意路径」天然满足。
+- 因此 `export_version` 实现仅需：按 `versionId` 取该版 `artifacts`，调用对应现有导出器（CSV 传 `artifacts.bomItems`，md/json 传整套 + 项目名）。**无需新增 save dialog 代码、无需改导出器**。
 
 ## 9. Report 前端
 
