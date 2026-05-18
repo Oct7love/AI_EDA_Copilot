@@ -8,7 +8,7 @@ import type { ProcurementItem } from './procurement.types';
 import type { SchematicIntent } from './schematic.types';
 import type { PCBLayoutPlan } from './pcb.types';
 import type { DesignReviewResult } from './designReview.types';
-import type { SessionIndexEntry, ChatMessage } from './session.types';
+import type { SessionIndexEntry, ChatMessage, ReportVersionMeta } from './session.types';
 import type { FormInputData } from './input.types';
 import type { ArtifactState, ArtifactKey } from './artifactState.types';
 
@@ -65,6 +65,7 @@ export type ExtensionToReport =
   | BaseMessage<'pcb_layout_data', { pcbLayoutPlan: PCBLayoutPlan }>
   | BaseMessage<'design_review_data', { designReviewResult: DesignReviewResult }>
   | BaseMessage<'artifact_status', { state: ArtifactState }>
+  | BaseMessage<'version_list', { versions: ReportVersionMeta[]; currentVersionId: string | null }>
   | BaseMessage<'session_cleared', void>;
 
 // ─── 报告页 → Extension ──────────────────────────────
@@ -75,7 +76,10 @@ export type ReportToExtension =
   | BaseMessage<'requirement_edit', { field: string; value: unknown }>
   | BaseMessage<'regenerate_stage', { stage: ArtifactKey; mode: 'single' | 'cascade' }>
   | BaseMessage<'version_request', { projectId: string; version: number }>
-  | BaseMessage<'bom_export', void>;
+  | BaseMessage<'bom_export', void>
+  | BaseMessage<'restore_version', { versionId: string }>
+  | BaseMessage<'delete_version', { versionId: string }>
+  | BaseMessage<'export_version', { versionId: string; format: 'csv' | 'markdown' | 'json' }>;
 
 // ─── 工具函数类型 ────────────────────────────────────
 
