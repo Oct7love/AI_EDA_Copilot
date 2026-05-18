@@ -94,6 +94,7 @@ export class SessionManager {
       conversation: [...this.conversationMirror],
       artifacts,
       inputMode: this.inputMode,
+      versions: [], // stopgap（后续任务整体重写为透传已有 versions）
     };
 
     await this.storage.saveSession(data);

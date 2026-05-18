@@ -100,6 +100,8 @@ export type {
   SessionArtifacts,
   SessionData,
   SessionIndexEntry,
+  ReportVersion,
+  ReportVersionMeta,
 } from './session.types';
 
 export type {
