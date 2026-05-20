@@ -261,11 +261,17 @@ export function activate(context: vscode.ExtensionContext): void {
       }
 
       case 'restore_version':
-        sessionManager.restoreVersion(message.payload.versionId);
+        sessionManager.restoreVersion(message.payload.versionId).catch((err) => {
+          vscode.window.showErrorMessage(`恢复版本失败: ${err}`);
+          outputChannel.appendLine(`[restore_version] error: ${err}`);
+        });
         break;
 
       case 'delete_version':
-        sessionManager.deleteVersion(message.payload.versionId);
+        sessionManager.deleteVersion(message.payload.versionId).catch((err) => {
+          vscode.window.showErrorMessage(`删除版本失败: ${err}`);
+          outputChannel.appendLine(`[delete_version] error: ${err}`);
+        });
         break;
 
       case 'export_version': {
