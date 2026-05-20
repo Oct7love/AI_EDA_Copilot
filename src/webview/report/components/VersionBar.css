@@ -1,0 +1,46 @@
+/* VersionBar — Report 顶部版本栏 */
+.version-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--eda-space-2);
+  padding: var(--eda-space-2) var(--eda-space-3);
+  background-color: var(--eda-bg-secondary);
+  border-bottom: 1px solid var(--eda-border);
+  font-size: 0.85em;
+  overflow-x: auto;
+}
+
+.version-bar__label {
+  color: var(--eda-status-muted);
+  flex-shrink: 0;
+}
+
+.version-bar__select {
+  flex: 1;
+  min-width: 0;
+  padding: 2px 6px;
+  background-color: var(--eda-bg-primary);
+  color: inherit;
+  font-family: inherit;
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+}
+
+.version-bar__btn {
+  padding: 2px 10px;
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.version-bar__btn:hover {
+  background-color: var(--eda-bg-hover);
+}
+
+.version-bar__btn--danger:hover {
+  border-color: var(--eda-status-critical);
+  color: var(--eda-status-critical);
+}

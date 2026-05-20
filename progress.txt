@@ -513,6 +513,34 @@
 - [x] 无 console.log 残留
 - [x] progress.txt 已更新
 
+## 2026-05-20
+
+### Phase 7 — 报告版本管理 ✅
+
+**范围**：会话内报告版本历史。初始全管线完成自动快照、最多 10 版淘汰最旧、Report 顶部 VersionBar 切换/删除/另存。多方案对比、代码分析输入明确不在本轮（后续单独立项）。
+
+**新增**：
+- versionStore.ts 纯逻辑模块（MAX_VERSIONS / appendVersion / findVersion / removeVersion / buildVersionLabel / migrateSessionVersions）+ versionStore.test.ts（13 测试）
+- SessionData.versions[] + ReportVersion / ReportVersionMeta 类型
+- SessionManager：snapshotVersion / restoreVersion / deleteVersion / getVersionArtifacts + collectCurrentArtifacts / pushArtifactsToReport / pushVersionList / nextVersionIndex helper（switchSession DRY 复用）
+- AiPipelineService：isRegenerating 守卫，onPipelineComplete 收敛为「初始全管线完成」信号
+- SessionStorageService：loadSession 迁移规整补齐旧会话 versions
+- 消息协议：version_list / restore_version / delete_version / export_version
+- VersionBar.tsx + .css；reportStore versions/currentVersionId 状态；ReportApp 集成
+
+**触发机制**：初始全管线完成 → snapshotVersion（新版本）；regenerate（含 cascade 与 regenerateFrom('designReview')）经 isRegenerating 守卫 → 仅 autoSave 更新草稿不新增版本；restoreVersion 恢复为当前工作态不新增版本。
+
+**执行方式**：subagent-driven-development，11 任务，每任务经 spec 合规 + 代码质量两段独立审查。
+
+**§13.5 步骤 7 自检清单**：
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（12 文件 136 测试全绿）
+- [x] `npx @vscode/vsce package`（9 files, 258.72 KB）
+- [x] 无 console.log 残留
+- [x] progress.txt / IMPLEMENTATION_PLAN.md 已更新
+- [x] worktree 分支 worktree-feat+phase7+report-version-management 开发
+
 ### 下一步
-- Phase 7 — 本地存储 + 报告版本管理 + 代码分析输入
+- 多方案并排对比视图（原 IMPLEMENTATION_PLAN §9 剩余项，后续单独立项）
+- 代码分析输入（原 Phase 8，后续单独立项）
 - SessionStorageService / SessionManager 单元测试补充

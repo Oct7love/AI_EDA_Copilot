@@ -37,6 +37,8 @@ export interface SessionData {
   artifacts: SessionArtifacts;
   inputMode: 'chat' | 'form';
   formData?: FormInputData;
+  /** 报告版本历史（越新越靠后，长度 <= 10）；旧文件加载时迁移补齐 */
+  versions: ReportVersion[];
 }
 
 /** 会话索引条目（轻量，用于列表展示） */
@@ -46,3 +48,14 @@ export interface SessionIndexEntry {
   createdAt: string;
   updatedAt: string;
 }
+
+/** 单个报告版本快照 */
+export interface ReportVersion {
+  id: string;
+  createdAt: string;          // ISO 时间戳
+  label: string;              // 展示用，如 "v3 · 2026-05-18 23:10"
+  artifacts: SessionArtifacts;
+}
+
+/** 版本列表轻量元信息（推送到 Report，不含 artifacts） */
+export type ReportVersionMeta = Pick<ReportVersion, 'id' | 'createdAt' | 'label'>;

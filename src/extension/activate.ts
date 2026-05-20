@@ -59,9 +59,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // 注入 ArtifactStateService 到 SessionManager
   sessionManager.setArtifactStateService(artifactState);
 
-  // 管线完成后自动保存会话
+  // 初始全管线完成后：快照为新版本（regenerate 路径不走这里，见 isRegenerating 守卫）
   pipeline.onPipelineComplete = () => {
-    sessionManager.autoSave();
+    sessionManager.snapshotVersion();
   };
 
   // 拦截 assistant 消息用于对话镜像
@@ -256,6 +256,46 @@ export function activate(context: vscode.ExtensionContext): void {
         }).catch((err) => {
           artifactState.markError(stage);
           outputChannel.appendLine(`[regenerate] ${stage} error: ${err}`);
+        });
+        break;
+      }
+
+      case 'restore_version':
+        sessionManager.restoreVersion(message.payload.versionId).catch((err) => {
+          vscode.window.showErrorMessage(`恢复版本失败: ${err}`);
+          outputChannel.appendLine(`[restore_version] error: ${err}`);
+        });
+        break;
+
+      case 'delete_version':
+        sessionManager.deleteVersion(message.payload.versionId).catch((err) => {
+          vscode.window.showErrorMessage(`删除版本失败: ${err}`);
+          outputChannel.appendLine(`[delete_version] error: ${err}`);
+        });
+        break;
+
+      case 'export_version': {
+        const { versionId, format } = message.payload;
+        sessionManager.getVersionArtifacts(versionId).then((arts) => {
+          if (!arts) {
+            vscode.window.showWarningMessage('未找到该版本数据');
+            return;
+          }
+          const pName = arts.requirementSpec?.projectName?.value ?? 'untitled';
+          if (format === 'csv') {
+            if (arts.bomItems.length > 0) {
+              exportBomCsv(arts.bomItems);
+            } else {
+              vscode.window.showWarningMessage('该版本无 BOM 数据');
+            }
+          } else if (format === 'markdown') {
+            exportMarkdown(arts, pName);
+          } else if (format === 'json') {
+            exportJson(arts, pName);
+          }
+        }).catch((err) => {
+          vscode.window.showErrorMessage(`导出版本失败: ${err}`);
+          outputChannel.appendLine(`[export_version] error: ${err}`);
         });
         break;
       }
