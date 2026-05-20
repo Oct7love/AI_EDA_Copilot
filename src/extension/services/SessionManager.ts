@@ -149,6 +149,22 @@ export class SessionManager {
     });
   }
 
+  /**
+   * 计算下一个版本展示编号：取现有 versions 中已用的最大 vN 之上 +1。
+   * 单调递增，不因 10 上限淘汰最旧而回退。空数组返回 1。
+   */
+  private nextVersionIndex(versions: ReportVersion[]): number {
+    let max = 0;
+    for (const v of versions) {
+      const m = /^v(\d+) /.exec(v.label);
+      if (m) {
+        const n = parseInt(m[1], 10);
+        if (n > max) max = n;
+      }
+    }
+    return max + 1;
+  }
+
   // ─── 公开 API ─────────────────────────────────────────
 
   async listSessions(): Promise<SessionIndexEntry[]> {
@@ -290,7 +306,7 @@ export class SessionManager {
     const snapshot: ReportVersion = {
       id: generateId(),
       createdAt,
-      label: buildVersionLabel(data.versions.length + 1, createdAt),
+      label: buildVersionLabel(this.nextVersionIndex(data.versions), createdAt),
       artifacts: this.collectCurrentArtifacts(),
     };
 
@@ -321,7 +337,7 @@ export class SessionManager {
     this.pipeline.lastSchematic = a.schematicIntent;
     this.pipeline.lastPcbLayout = a.pcbLayoutPlan;
 
-    data.artifacts = a; // 顶层镜像被恢复的版本
+    data.artifacts = { ...a }; // 顶层镜像被恢复的版本（浅拷贝，与版本内 artifacts 解耦引用）
     data.updatedAt = new Date().toISOString();
     await this.storage.saveSession(data);
 
