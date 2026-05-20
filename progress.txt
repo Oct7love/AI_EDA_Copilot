@@ -533,12 +533,12 @@
 **执行方式**：subagent-driven-development，11 任务，每任务经 spec 合规 + 代码质量两段独立审查。
 
 **§13.5 步骤 7 自检清单**：
-- [x] npm run compile（tsc 零错误 + esbuild 三入口）
-- [x] npm test（12 文件 136 测试全绿）
-- [x] npx @vscode/vsce package 成功
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（12 文件 136 测试全绿）
+- [x] `npx @vscode/vsce package`（9 files, 258.72 KB）
 - [x] 无 console.log 残留
 - [x] progress.txt / IMPLEMENTATION_PLAN.md 已更新
-- [x] worktree 分支 feat/phase7/report-version-management 开发
+- [x] worktree 分支 worktree-feat+phase7+report-version-management 开发
 
 ### 下一步
 - 多方案并排对比视图（原 IMPLEMENTATION_PLAN §9 剩余项，后续单独立项）
