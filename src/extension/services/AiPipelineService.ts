@@ -377,6 +377,7 @@ export class AiPipelineService {
       this.sendPanelStatus('design_review', 100);
       this.onStageComplete?.('designReview');
       this.outputChannel.appendLine(`[Pipeline] design_review stage completed — ${allFindings.length} total findings — full pipeline done`);
+      // 守卫：onPipelineComplete 仅在「初始全管线完成」时触发，局部 regenerate 路径下不触发（Task 7 将其接到 SessionManager.snapshotVersion）
       if (!this.isRegenerating) this.onPipelineComplete?.();
     } catch (err) {
       this.handleStageError('design_review', err);
