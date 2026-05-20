@@ -7,6 +7,7 @@
   background-color: var(--eda-bg-secondary);
   border-bottom: 1px solid var(--eda-border);
   font-size: 0.85em;
+  overflow-x: auto;
 }
 
 .version-bar__label {
@@ -20,6 +21,7 @@
   padding: 2px 6px;
   background-color: var(--eda-bg-primary);
   color: inherit;
+  font-family: inherit;
   border: 1px solid var(--eda-border);
   border-radius: var(--eda-radius-sm);
 }
