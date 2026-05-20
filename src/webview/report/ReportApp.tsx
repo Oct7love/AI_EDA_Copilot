@@ -11,6 +11,7 @@ import { ProcurementSection } from './components/ProcurementSection';
 import { SchematicSection } from './components/SchematicSection';
 import { PcbLayoutSection } from './components/PcbLayoutSection';
 import { DesignReviewSection } from './components/DesignReviewSection';
+import { VersionBar } from './components/VersionBar';
 import './ReportApp.css';
 
 const TABS: { id: ReportSection; label: string }[] = [
@@ -29,7 +30,7 @@ export function ReportApp(): React.ReactElement {
     setRequirementSpec, setOverview, setBomItems, setProcurementItems,
     setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult,
     appendStreamContent, setIsStreaming, streamContent, reset,
-    setArtifactStatus, artifactStatus,
+    setArtifactStatus, artifactStatus, setVersionList,
   } = useReportStore();
 
   useEffect(() => {
@@ -65,6 +66,9 @@ export function ReportApp(): React.ReactElement {
         case 'artifact_status':
           setArtifactStatus(msg.payload.state);
           break;
+        case 'version_list':
+          setVersionList(msg.payload.versions, msg.payload.currentVersionId);
+          break;
         case 'session_cleared':
           reset();
           break;
@@ -72,7 +76,7 @@ export function ReportApp(): React.ReactElement {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult, appendStreamContent, setIsStreaming, setArtifactStatus, reset]);
+  }, [setRequirementSpec, setOverview, setBomItems, setProcurementItems, setSchematicIntent, setPcbLayoutPlan, setDesignReviewResult, appendStreamContent, setIsStreaming, setArtifactStatus, reset, setVersionList]);
 
   // Tab → ArtifactKey 映射（overview 无对应产物）
   const tabToArtifact: Partial<Record<ReportSection, ArtifactKey>> = {
@@ -127,6 +131,7 @@ export function ReportApp(): React.ReactElement {
 
   return (
     <div className="report-container">
+      <VersionBar />
       <nav className="report-tabs" role="tablist">
         {TABS.map(tab => {
           const artKey = tabToArtifact[tab.id];
