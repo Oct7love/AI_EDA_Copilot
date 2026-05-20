@@ -1,6 +1,6 @@
 /** Report Tab Zustand Store，管理报告数据、流式内容和编辑态 */
 import { create } from 'zustand';
-import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem, SchematicIntent, PCBLayoutPlan, DesignReviewResult, ArtifactState } from '../../../shared/types';
+import type { RequirementSpec, OverviewData, BOMItem, ProcurementItem, SchematicIntent, PCBLayoutPlan, DesignReviewResult, ArtifactState, ReportVersionMeta } from '../../../shared/types';
 
 interface ReportState {
   requirementSpec: RequirementSpec | null;
@@ -15,6 +15,8 @@ interface ReportState {
 
   editingFields: Record<string, string>;
   artifactStatus: ArtifactState | null;
+  versions: ReportVersionMeta[];
+  currentVersionId: string | null;
 
   setRequirementSpec: (spec: RequirementSpec) => void;
   setOverview: (data: OverviewData) => void;
@@ -29,6 +31,7 @@ interface ReportState {
   setEditingField: (field: string, value: string) => void;
   clearEditingField: (field: string) => void;
   setArtifactStatus: (state: ArtifactState) => void;
+  setVersionList: (versions: ReportVersionMeta[], currentVersionId: string | null) => void;
   reset: () => void;
 }
 
@@ -44,6 +47,8 @@ export const useReportStore = create<ReportState>((set) => ({
   isStreaming: false,
   editingFields: {},
   artifactStatus: null,
+  versions: [],
+  currentVersionId: null,
 
   setRequirementSpec: (spec) => set({ requirementSpec: spec }),
   setOverview: (data) => set({ overview: data }),
@@ -64,10 +69,11 @@ export const useReportStore = create<ReportState>((set) => ({
       return { editingFields: next };
     }),
   setArtifactStatus: (state) => set({ artifactStatus: state }),
+  setVersionList: (versions, currentVersionId) => set({ versions, currentVersionId }),
   reset: () =>
     set({
       requirementSpec: null, overview: null, bomItems: [], procurementItems: [],
       schematicIntent: null, pcbLayoutPlan: null, designReviewResult: null,
-      streamContent: '', isStreaming: false, editingFields: {}, artifactStatus: null,
+      streamContent: '', isStreaming: false, editingFields: {}, artifactStatus: null, versions: [], currentVersionId: null,
     }),
 }));
