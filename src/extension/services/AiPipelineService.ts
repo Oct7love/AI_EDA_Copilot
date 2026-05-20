@@ -38,6 +38,7 @@ import { runAllRules } from './RuleEngineService';
 
 export class AiPipelineService {
   private isRunning = false;
+  private isRegenerating = false;
   private readonly adapter: AiAdapter;
   private readonly procurement = new ProcurementService();
   private readonly streamDeps: StreamRunnerDeps;
@@ -376,7 +377,7 @@ export class AiPipelineService {
       this.sendPanelStatus('design_review', 100);
       this.onStageComplete?.('designReview');
       this.outputChannel.appendLine(`[Pipeline] design_review stage completed — ${allFindings.length} total findings — full pipeline done`);
-      this.onPipelineComplete?.();
+      if (!this.isRegenerating) this.onPipelineComplete?.();
     } catch (err) {
       this.handleStageError('design_review', err);
     }
@@ -414,6 +415,7 @@ export class AiPipelineService {
     }
 
     this.isRunning = true;
+    this.isRegenerating = true;
 
     try {
       if (!(await this.ensureApiKey())) {
@@ -467,6 +469,7 @@ export class AiPipelineService {
       this.handleStageError(stage, err);
     } finally {
       this.isRunning = false;
+      this.isRegenerating = false;
     }
   }
 }
