@@ -287,6 +287,7 @@ export class SessionManager {
     await this.storage.deleteSession(id);
     if (this.currentSessionId === id) {
       this.currentSessionId = null;
+      this.currentVersionId = null;
     }
     this.outputChannel.appendLine(`[SessionManager] deleted session: ${id}`);
   }

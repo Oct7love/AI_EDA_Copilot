@@ -293,6 +293,9 @@ export function activate(context: vscode.ExtensionContext): void {
           } else if (format === 'json') {
             exportJson(arts, pName);
           }
+        }).catch((err) => {
+          vscode.window.showErrorMessage(`导出版本失败: ${err}`);
+          outputChannel.appendLine(`[export_version] error: ${err}`);
         });
         break;
       }

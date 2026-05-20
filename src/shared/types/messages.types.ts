@@ -58,7 +58,7 @@ export type ExtensionToReport =
   | BaseMessage<'report_data', { report: { requirementSpec: RequirementSpec; overview: OverviewData }; isStreaming: boolean }>
   | BaseMessage<'report_stream_chunk', { section: ReportSection; content: string }>
   | BaseMessage<'report_stream_end', { report: unknown }>  // 未来流式结束回传，结构待定
-  | BaseMessage<'comparison_data', { schemes: unknown[] }>  // Phase 7 方案对比，结构待定
+  | BaseMessage<'comparison_data', { schemes: unknown[] }>  // 方案对比（后续单独立项，结构待定）
   | BaseMessage<'bom_data', { bomItems: BOMItem[]; isStreaming: boolean }>
   | BaseMessage<'procurement_data', { procurementItems: ProcurementItem[] }>
   | BaseMessage<'schematic_data', { schematicIntent: SchematicIntent }>
