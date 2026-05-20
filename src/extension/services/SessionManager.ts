@@ -359,4 +359,12 @@ export class SessionManager {
     this.pushVersionList(data);
     this.outputChannel.appendLine(`[SessionManager] deleted version: ${versionId}`);
   }
+
+  /** 取某版本的产物快照（用于按版本导出），未找到返回 null */
+  async getVersionArtifacts(versionId: string): Promise<SessionArtifacts | null> {
+    if (!this.currentSessionId) return null;
+    const data = await this.storage.loadSession(this.currentSessionId);
+    if (!data) return null;
+    return findVersion(data.versions, versionId)?.artifacts ?? null;
+  }
 }
