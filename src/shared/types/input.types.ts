@@ -24,13 +24,15 @@ export interface FormInputData {
   additionalNotes: string;
 }
 
-/** 代码分析结果（Phase 8 实现，此处预定义类型） */
+/** 代码分析结果 */
 export interface CodeAnalysisResult {
-  language: 'c' | 'cpp' | 'python';
+  language: 'c' | 'cpp' | 'python';   // V1 恒为 'cpp'（Arduino）
   detectedGpios: GpioUsage[];
   detectedLibraries: string[];
   detectedPeripherals: string[];
   ambiguousReferences: AmbiguousRef[];
+  scannedFiles: number;               // 实际扫描的文件数（预览显示）
+  truncated: boolean;                 // 是否因文件数/体积上限被截断
 }
 
 export interface GpioUsage {
