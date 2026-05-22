@@ -23,10 +23,12 @@ export class NoArduinoFilesError extends Error {
 }
 
 export class CodeAnalysisService {
-  /** 遍历文件夹 → 收集源码 → 分析；无源码时抛 NoArduinoFilesError */
+  /** 遍历文件夹 → 收集源码 → 分析；无源码时抛 NoArduinoFilesError；不可读的目录与文件会被静默跳过 */
   async analyze(folderUri: vscode.Uri): Promise<CodeAnalysisResult> {
     const files: SourceFile[] = [];
     let totalBytes = 0;
+    // truncated 表示「确有文件因上限被跳过」：仅在 cap 触发的提前返回时置 true。
+    // 最后一个文件超限但其后无条目 = 扫描完整，truncated 保持 false 是正确的。
     let truncated = false;
 
     const walk = async (dir: vscode.Uri): Promise<void> => {
