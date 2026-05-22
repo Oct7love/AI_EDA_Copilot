@@ -37,7 +37,8 @@ Return ONLY a JSON object (no markdown fences, no explanation) with this exact s
 4. Fields not determinable → value:null, source:"ai_inferred", status:"pending_confirmation", confidence:0
 5. When uncertain → add to openQuestions with appropriate priority (critical/important/optional)
 6. functionalModules: break the project into logical modules with core/optional priority
-7. Be thorough: infer communication protocols, power requirements, sensor types from context`;
+7. Be thorough: infer communication protocols, power requirements, sensor types from context
+8. If the input contains a "[代码分析结果]" block: treat the listed libraries / peripherals / GPIOs as source-code evidence — high confidence (source:"ai_inferred", status:"confirmed", confidence>=0.9). For each item under "模糊引用", add a corresponding entry to openQuestions with priority:"important"`;
 
 export function buildRequirementPrompt(
   userInput: string,
