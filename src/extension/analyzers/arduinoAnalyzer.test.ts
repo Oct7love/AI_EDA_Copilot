@@ -36,6 +36,10 @@ describe('buildSymbolTable', () => {
     const t = buildSymbolTable('const int DHT = 4;');
     expect(t.get('DHT')).toBe('4');
   });
+  it('收录 const uint16_t / unsigned int 引脚', () => {
+    expect(buildSymbolTable('const uint16_t PWM = 9;').get('PWM')).toBe('9');
+    expect(buildSymbolTable('const unsigned int RELAY = 7;').get('RELAY')).toBe('7');
+  });
   it('解析一次跳转（#define B A）', () => {
     const t = buildSymbolTable('#define A 5\n#define B A');
     expect(t.get('B')).toBe('5');

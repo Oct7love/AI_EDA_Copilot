@@ -22,7 +22,11 @@ const SYSTEM_HEADERS = new Set([
 /** 引脚 token 正则片段：标识符 或 数字 */
 const PIN = '([A-Za-z_]\\w*|\\d+)';
 
-/** 去掉块注释与行注释，避免误匹配注释里的示例代码 */
+/**
+ * 去掉块注释与行注释，避免误匹配注释里的示例代码。
+ * 注意：不处理字符串字面量，// 出现在字符串中（如 URL）会被截断。
+ * 对 GPIO/库提取无实际影响（API 调用与 #include 不出现在字符串内）。
+ */
 export function stripComments(code: string): string {
   return code
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
@@ -42,7 +46,7 @@ export function buildSymbolTable(code: string): Map<string, string> {
   const raw = new Map<string, string>();
   const patterns = [
     /#define\s+([A-Za-z_]\w*)\s+([A-Za-z_]\w*|\d+)/g,
-    /\bconst(?:expr)?\s+(?:int|uint8_t|byte|short)\s+([A-Za-z_]\w*)\s*=\s*([A-Za-z_]\w*|\d+)\s*;/g,
+    /\bconst(?:expr)?\s+(?:int|uint\d+_t|byte|short|unsigned\s+int)\s+([A-Za-z_]\w*)\s*=\s*([A-Za-z_]\w*|\d+)\s*;/g,
   ];
   for (const re of patterns) {
     for (const m of code.matchAll(re)) {
@@ -64,9 +68,9 @@ export function buildSymbolTable(code: string): Map<string, string> {
 /** 提取 #include 库（去重、排序、过滤系统头） */
 export function extractLibraries(code: string): string[] {
   const libs = new Set<string>();
-  for (const m of code.matchAll(/#include\s*[<"]([^>"]+)[>"]/g)) {
-    const header = m[1].trim();
-    if (!SYSTEM_HEADERS.has(header.toLowerCase())) libs.add(header);
+  for (const m of code.matchAll(/#include\s*(?:<([^>]+)>|"([^"]+)")/g)) {
+    const header = (m[1] ?? m[2] ?? '').trim();
+    if (header && !SYSTEM_HEADERS.has(header.toLowerCase())) libs.add(header);
   }
   return [...libs].sort();
 }
