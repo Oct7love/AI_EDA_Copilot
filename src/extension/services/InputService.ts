@@ -93,9 +93,18 @@ export class InputService {
     };
   }
 
-  /** 将代码分析结果序列化为可读文本（供 AI prompt 消费） */
+  /** 将代码分析结果序列化为可读文本（供 AI prompt 使用） */
   private _codeContextToText(r: CodeAnalysisResult): string {
-    const lines: string[] = ['[代码分析结果 — 来自固件源码扫描]', '语言: Arduino C/C++'];
+    const langLabel: Record<CodeAnalysisResult['language'], string> = {
+      cpp: 'Arduino C/C++', c: 'C', python: 'Python',
+    };
+    const lines: string[] = [
+      '[代码分析结果 — 来自固件源码扫描]',
+      `语言: ${langLabel[r.language]}`,
+    ];
+    if (r.truncated) {
+      lines.push('注意：代码量超出扫描上限，仅扫描了部分文件，下列库/外设/GPIO 可能不完整');
+    }
     if (r.detectedLibraries.length > 0) {
       lines.push(`检测到的库: ${r.detectedLibraries.join(', ')}`);
     }

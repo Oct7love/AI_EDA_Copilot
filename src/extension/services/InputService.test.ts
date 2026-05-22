@@ -53,5 +53,12 @@ describe('InputService.fromCodeAnalysis', () => {
     });
     const req = new InputService().fromCodeAnalysis(empty);
     expect(req.rawText).toContain('[代码分析结果');
+    expect(req.rawText).not.toContain('检测到的库');
+    expect(req.rawText).not.toContain('模糊引用');
+  });
+
+  it('truncated 时 rawText 含截断提示', () => {
+    const req = new InputService().fromCodeAnalysis(makeResult({ truncated: true }));
+    expect(req.rawText).toContain('代码量超出扫描上限');
   });
 });
