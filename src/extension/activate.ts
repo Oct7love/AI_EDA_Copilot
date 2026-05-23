@@ -199,6 +199,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const request = inputService.fromCodeAnalysis(result, notes);
         sessionManager.mirrorUserMessage(`[代码分析] 已导入固件代码，扫描 ${result.scannedFiles} 个文件`);
         outputChannel.appendLine(`[InputService] code_analysis → ${result.scannedFiles} files`);
+        // 不调 sessionManager.setInputMode：spec §8/§9 明定「代码」仅面板本地 UI 模式，不进协议层 inputMode；代码分析会话沿用此前 inputMode，origin 由镜像消息标识。
         pipeline.runRequirementStage(request);
         break;
       }
