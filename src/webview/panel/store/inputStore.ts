@@ -92,7 +92,7 @@ export const useInputStore = create<InputState>((set) => ({
 
   setSessionInfo: (sessionId, sessionName) => set({ sessionId, sessionName }),
 
-  setCodeAnalysisScanning: () => set({ codeAnalysisStatus: 'scanning', codeAnalysisError: '' }),
+  setCodeAnalysisScanning: () => set({ codeAnalysisStatus: 'scanning', codeAnalysisResult: null, codeAnalysisError: '' }),
   setCodeAnalysisResult: (result) => set({ codeAnalysisStatus: 'ready', codeAnalysisResult: result, codeAnalysisError: '' }),
   setCodeAnalysisFailed: (message) => set({ codeAnalysisStatus: 'failed', codeAnalysisResult: null, codeAnalysisError: message }),
   resetCodeAnalysis: () => set({ codeAnalysisStatus: 'idle', codeAnalysisResult: null, codeAnalysisError: '' }),
