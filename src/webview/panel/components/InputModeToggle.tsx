@@ -11,6 +11,7 @@ export function InputModeToggle(): React.ReactElement {
   const options: { value: InputMode; label: string }[] = [
     { value: 'chat', label: 'Chat' },
     { value: 'form', label: 'Form' },
+    { value: 'code', label: 'Code' },
   ];
 
   return (
