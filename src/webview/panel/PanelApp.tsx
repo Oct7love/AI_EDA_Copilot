@@ -5,6 +5,8 @@ import { InputModeToggle } from './components/InputModeToggle';
 import { ChatInput } from './components/ChatInput';
 import { FormInput } from './components/FormInput';
 import { TemplateSelector } from './components/TemplateSelector';
+import { CodeFolderPicker } from './components/CodeFolderPicker';
+import { CodeAnalysisPreview } from './components/CodeAnalysisPreview';
 import { SessionBar } from './components/SessionBar';
 import vscodeApi from '../shared/vscodeApi';
 import type { ExtensionToPanel, PanelToExtension } from '../../shared/types';
@@ -27,6 +29,9 @@ export function PanelApp(): React.ReactElement {
   const loadSession = useInputStore((s) => s.loadSession);
   const clearChat = useInputStore((s) => s.clearChat);
   const setSessionInfo = useInputStore((s) => s.setSessionInfo);
+  const codeAnalysisStatus = useInputStore((s) => s.codeAnalysisStatus);
+  const setCodeAnalysisResult = useInputStore((s) => s.setCodeAnalysisResult);
+  const setCodeAnalysisFailed = useInputStore((s) => s.setCodeAnalysisFailed);
 
   // 监听 Extension Host → Panel 消息
   useEffect(() => {
@@ -63,11 +68,17 @@ export function PanelApp(): React.ReactElement {
         case 'session_saved':
           setSessionInfo(msg.payload.sessionId, msg.payload.name);
           break;
+        case 'code_analysis_result':
+          setCodeAnalysisResult(msg.payload.result);
+          break;
+        case 'code_analysis_failed':
+          setCodeAnalysisFailed(msg.payload.message);
+          break;
       }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [addMessage, appendToLastMessage, setStatus, setIsGenerating, loadSession, clearChat, setSessionInfo]);
+  }, [addMessage, appendToLastMessage, setStatus, setIsGenerating, loadSession, clearChat, setSessionInfo, setCodeAnalysisResult, setCodeAnalysisFailed]);
 
   const handleOpenReport = useCallback(() => {
     const message: PanelToExtension = createMessage(
@@ -106,7 +117,13 @@ export function PanelApp(): React.ReactElement {
       {/* 输入区域 */}
       <div className="input-area">
         <InputModeToggle />
-        {mode === 'chat' ? <ChatInput /> : <FormInput />}
+        {mode === 'chat' && <ChatInput />}
+        {mode === 'form' && <FormInput />}
+        {mode === 'code' && (
+          codeAnalysisStatus === 'ready'
+            ? <CodeAnalysisPreview />
+            : <CodeFolderPicker />
+        )}
       </div>
     </div>
   );
