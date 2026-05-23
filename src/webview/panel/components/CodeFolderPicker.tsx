@@ -6,6 +6,7 @@ import { createMessage } from '../../../shared/types';
 import type { PanelToExtension } from '../../../shared/types';
 import './CodeFolderPicker.css';
 
+/** 代码文件夹选择入口 */
 export function CodeFolderPicker(): React.ReactElement {
   const status = useInputStore((s) => s.codeAnalysisStatus);
   const error = useInputStore((s) => s.codeAnalysisError);
