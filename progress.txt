@@ -540,7 +540,34 @@
 - [x] progress.txt / IMPLEMENTATION_PLAN.md 已更新
 - [x] worktree 分支 worktree-feat+phase7+report-version-management 开发
 
+## 2026-05-24
+
+### 代码分析输入 ✅
+
+**范围**：选 Arduino/ESP32 固件代码文件夹 → 本地启发式扫描器提取 GPIO/库/外设 → 侧边栏预览 → 确认后注入现有需求管线。V1 仅 Arduino C/C++，零 AI token 提取。
+
+**新增**：
+- arduinoAnalyzer.ts 纯逻辑（stripComments / buildSymbolTable / extractLibraries / extractGpios / extractPeripherals / analyzeArduinoCode）+ arduinoAnalyzer.test.ts（18 测试，含 uint16_t/unsigned int 支持 + 模糊引用 + 跨文件符号表 + 注释剔除）
+- CodeAnalysisService.ts 文件遍历编排（上限 200 文件 / 2MB，跳过 .git / node_modules / build 等）
+- CodeAnalysisResult 扩展 scannedFiles / truncated
+- InputService.fromCodeAnalysis + _codeContextToText 序列化（按 r.language 动态、截断时显式提示）+ InputService.test.ts（6 测试）
+- requirementPrompt SYSTEM_PROMPT 新增代码上下文规则（规则 8，截断时下调可信度）
+- 消息协议：pick_code_folder / submit_code_analysis / code_analysis_result / code_analysis_failed
+- 侧边栏「Code」模式：InputModeToggle 第三段 + CodeFolderPicker + CodeAnalysisPreview + inputStore 代码分析状态（含 setScanning 清 result 维持不变式）
+
+**设计决策**：扫描引擎用本地正则/模式匹配（零 token、确定性、纯函数易测），非 AI 提取；「Code」为面板本地 UI 模式，不进协议层 inputMode；模糊引用经预览展示 + 注入后成为报告 openQuestions；truncated 仅在「确有文件因上限被跳过」时为 true（语义已注释固化）。
+
+**执行方式**：subagent-driven-development，12 任务，每任务经 spec 合规 + 代码质量两段独立审查（含若干次审查争议经实证裁定）。
+
+**§13.5 步骤 7 自检清单**：
+- [x] `npm run compile`（tsc 零错误 + esbuild 三入口）
+- [x] `npm run test`（14 文件 160 测试全绿）
+- [x] `npx @vscode/vsce package`（9 files, 262.92 KB）
+- [x] 无 console.log 残留
+- [x] progress.txt / IMPLEMENTATION_PLAN.md 已更新
+- [x] worktree 分支 worktree-feat+phase8+code-analysis-input 开发
+
 ### 下一步
-- 多方案并排对比视图（原 IMPLEMENTATION_PLAN §9 剩余项，后续单独立项）
-- 代码分析输入（原 Phase 8，后续单独立项）
+- Python / MicroPython 代码分析（本轮明确推迟）
+- 多方案并排对比视图（后续单独立项）
 - SessionStorageService / SessionManager 单元测试补充

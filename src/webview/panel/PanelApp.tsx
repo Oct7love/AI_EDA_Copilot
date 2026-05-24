@@ -15,7 +15,7 @@ import './PanelApp.css';
 
 /**
  * 侧边栏根组件
- * Phase 2：三模式输入（Chat / Form / Template）+ Zustand 状态管理
+ * Phase 8：三模式输入（Chat / Form / Code）+ Zustand 状态管理
  * 会话管理：保存 / 切换 / 新建
  */
 export function PanelApp(): React.ReactElement {
