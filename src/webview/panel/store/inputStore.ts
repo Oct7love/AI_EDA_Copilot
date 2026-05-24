@@ -1,9 +1,10 @@
 /** Side Panel Zustand Store，管理输入状态、消息列表、会话信息和生成状态 */
 import { create } from 'zustand';
-import type { FormInputData, ChatMessage } from '../../../shared/types';
+import type { FormInputData, ChatMessage, CodeAnalysisResult } from '../../../shared/types';
 import { createEmptyFormData } from '../../../shared/types';
 
-export type InputMode = 'chat' | 'form';
+export type InputMode = 'chat' | 'form' | 'code';
+export type CodeAnalysisStatus = 'idle' | 'scanning' | 'ready' | 'failed';
 
 interface InputState {
   mode: InputMode;
@@ -14,6 +15,9 @@ interface InputState {
   isGenerating: boolean;
   sessionId: string | null;
   sessionName: string | null;
+  codeAnalysisStatus: CodeAnalysisStatus;
+  codeAnalysisResult: CodeAnalysisResult | null;
+  codeAnalysisError: string;
 
   setMode: (mode: InputMode) => void;
   setChatText: (text: string) => void;
@@ -25,6 +29,10 @@ interface InputState {
   setIsGenerating: (v: boolean) => void;
   setSessionInfo: (id: string | null, name: string | null) => void;
   loadSession: (data: { messages: ChatMessage[]; mode: InputMode; formData?: FormInputData; sessionId: string; sessionName: string }) => void;
+  setCodeAnalysisScanning: () => void;
+  setCodeAnalysisResult: (result: CodeAnalysisResult) => void;
+  setCodeAnalysisFailed: (message: string) => void;
+  resetCodeAnalysis: () => void;
   clearChat: () => void;
 }
 
@@ -37,6 +45,9 @@ export const useInputStore = create<InputState>((set) => ({
   isGenerating: false,
   sessionId: null,
   sessionName: null,
+  codeAnalysisStatus: 'idle',
+  codeAnalysisResult: null,
+  codeAnalysisError: '',
 
   setMode: (mode) => set({ mode }),
   setChatText: (chatText) => set({ chatText }),
@@ -81,6 +92,11 @@ export const useInputStore = create<InputState>((set) => ({
 
   setSessionInfo: (sessionId, sessionName) => set({ sessionId, sessionName }),
 
+  setCodeAnalysisScanning: () => set({ codeAnalysisStatus: 'scanning', codeAnalysisResult: null, codeAnalysisError: '' }),
+  setCodeAnalysisResult: (result) => set({ codeAnalysisStatus: 'ready', codeAnalysisResult: result, codeAnalysisError: '' }),
+  setCodeAnalysisFailed: (message) => set({ codeAnalysisStatus: 'failed', codeAnalysisResult: null, codeAnalysisError: message }),
+  resetCodeAnalysis: () => set({ codeAnalysisStatus: 'idle', codeAnalysisResult: null, codeAnalysisError: '' }),
+
   loadSession: (data) => set({
     messages: data.messages,
     mode: data.mode,
@@ -90,11 +106,13 @@ export const useInputStore = create<InputState>((set) => ({
     chatText: '',
     status: '',
     isGenerating: false,
+    codeAnalysisStatus: 'idle', codeAnalysisResult: null, codeAnalysisError: '',
   }),
 
   clearChat: () => set({
     messages: [], chatText: '', status: '',
     sessionId: null, sessionName: null,
     formData: createEmptyFormData(),
+    codeAnalysisStatus: 'idle', codeAnalysisResult: null, codeAnalysisError: '',
   }),
 }));

@@ -9,7 +9,7 @@ import type { SchematicIntent } from './schematic.types';
 import type { PCBLayoutPlan } from './pcb.types';
 import type { DesignReviewResult } from './designReview.types';
 import type { SessionIndexEntry, ChatMessage, ReportVersionMeta } from './session.types';
-import type { FormInputData } from './input.types';
+import type { FormInputData, CodeAnalysisResult } from './input.types';
 import type { ArtifactState, ArtifactKey } from './artifactState.types';
 
 /** 消息方向标识 */
@@ -38,7 +38,9 @@ export type PanelToExtension =
   | BaseMessage<'session_new', void>
   | BaseMessage<'session_switch', { sessionId: string }>
   | BaseMessage<'session_delete', { sessionId: string }>
-  | BaseMessage<'session_rename', { sessionId: string; name: string }>;
+  | BaseMessage<'session_rename', { sessionId: string; name: string }>
+  | BaseMessage<'pick_code_folder', void>
+  | BaseMessage<'submit_code_analysis', { result: CodeAnalysisResult; notes: string }>;
 
 // ─── Extension → 侧边栏 ─────────────────────────────
 
@@ -50,7 +52,9 @@ export type ExtensionToPanel =
   | BaseMessage<'session_list_response', { sessions: SessionIndexEntry[] }>
   | BaseMessage<'session_loaded', { sessionId: string; name: string; conversation: ChatMessage[]; inputMode: 'chat' | 'form'; formData?: FormInputData }>
   | BaseMessage<'session_cleared', void>
-  | BaseMessage<'session_saved', { sessionId: string; name: string }>;
+  | BaseMessage<'session_saved', { sessionId: string; name: string }>
+  | BaseMessage<'code_analysis_result', { result: CodeAnalysisResult }>
+  | BaseMessage<'code_analysis_failed', { message: string }>;
 
 // ─── Extension → 报告页 ──────────────────────────────
 

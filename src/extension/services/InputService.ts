@@ -1,7 +1,7 @@
 /**
  * 输入标准化服务，将 chat/form/template 三种输入统一为 AnalysisRequest
  */
-import type { AnalysisRequest, FormInputData } from '../../shared/types';
+import type { AnalysisRequest, FormInputData, CodeAnalysisResult } from '../../shared/types';
 import { PROJECT_TEMPLATES } from '../../shared/constants/templates';
 
 /**
@@ -77,6 +77,52 @@ export class InputService {
     if (data.powerConsumption) lines.push(`Power consumption: ${data.powerConsumption}`);
     if (data.precision) lines.push(`Precision: ${data.precision}`);
     if (data.additionalNotes) lines.push(`Notes: ${data.additionalNotes}`);
+    return lines.join('\n');
+  }
+
+  /** 代码分析结果 → AnalysisRequest */
+  public fromCodeAnalysis(result: CodeAnalysisResult, notes?: string): AnalysisRequest {
+    const codeText = this._codeContextToText(result);
+    const trimmed = notes?.trim();
+    const rawText = trimmed ? `${codeText}\n\n补充说明：${trimmed}` : codeText;
+    return {
+      inputType: 'code_analysis',
+      rawText,
+      codeContext: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /** 将代码分析结果序列化为可读文本（供 AI prompt 使用） */
+  private _codeContextToText(r: CodeAnalysisResult): string {
+    const langLabel: Record<CodeAnalysisResult['language'], string> = {
+      cpp: 'Arduino C/C++', c: 'C', python: 'Python',
+    };
+    const lines: string[] = [
+      '[代码分析结果 — 来自固件源码扫描]',
+      `语言: ${langLabel[r.language]}`,
+    ];
+    if (r.truncated) {
+      lines.push('注意：代码量超出扫描上限，仅扫描了部分文件，下列库/外设/GPIO 可能不完整');
+    }
+    if (r.detectedLibraries.length > 0) {
+      lines.push(`检测到的库: ${r.detectedLibraries.join(', ')}`);
+    }
+    if (r.detectedPeripherals.length > 0) {
+      lines.push(`检测到的外设: ${r.detectedPeripherals.join(', ')}`);
+    }
+    if (r.detectedGpios.length > 0) {
+      lines.push('检测到的 GPIO 使用:');
+      for (const g of r.detectedGpios) {
+        lines.push(`- 引脚 ${g.pin} (${g.direction}) — ${g.usage}`);
+      }
+    }
+    if (r.ambiguousReferences.length > 0) {
+      lines.push('模糊引用（需用户确认）:');
+      for (const a of r.ambiguousReferences) {
+        lines.push(`- ${a.reference}: ${a.possibleMeanings.join('; ')}`);
+      }
+    }
     return lines.join('\n');
   }
 }

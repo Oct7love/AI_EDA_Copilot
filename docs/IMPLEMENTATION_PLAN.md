@@ -609,11 +609,11 @@ src/
 
 ### 10.4 验收标准
 
-- [ ] 选择包含 ESP32 Arduino 代码的文件夹 → 检测出 GPIO / 库 / 外设
-- [ ] 检测到模糊引用时向用户提问确认
-- [ ] 代码分析结果可预览，用户确认后注入管线
-- [ ] 纯代码输入也能生成完整 RequirementSpec
-- [ ] 支持 C、C++、Python 三种语言
+- [x] 选择包含 ESP32 Arduino 代码的文件夹 → 检测出 GPIO / 库 / 外设
+- [x] 检测到模糊引用时向用户提问确认（经预览展示 + 注入后成为 openQuestions）
+- [x] 代码分析结果可预览，用户确认后注入管线
+- [x] 纯代码输入也能生成完整 RequirementSpec
+- [ ] 支持 C、C++、Python 三种语言（V1 仅 C/C++ Arduino；Python 后续单独立项）
 
 ---
 

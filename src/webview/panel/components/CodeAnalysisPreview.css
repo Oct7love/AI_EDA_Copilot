@@ -1,0 +1,94 @@
+/* CodeAnalysisPreview — 扫描结果预览 */
+.code-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-2);
+  padding: var(--eda-space-2) 0;
+}
+
+.code-preview__summary {
+  font-size: 12px;
+  color: var(--eda-fg-secondary);
+}
+
+.code-preview__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eda-space-1);
+}
+
+.code-preview__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--eda-fg-primary);
+}
+
+.code-preview__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--eda-space-1);
+}
+
+.code-preview__tag {
+  padding: 1px 8px;
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  font-size: 11px;
+  color: var(--eda-fg-secondary);
+}
+
+.code-preview__list {
+  margin: 0;
+  padding-left: var(--eda-space-4);
+  font-size: 12px;
+  color: var(--eda-fg-secondary);
+}
+
+.code-preview__empty {
+  font-size: 12px;
+  color: var(--eda-fg-secondary);
+  opacity: 0.7;
+}
+
+.code-preview__section--ambiguous .code-preview__label {
+  color: var(--eda-status-warning);
+}
+
+.code-preview__notes {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: var(--eda-space-2);
+  border: 1px solid var(--eda-border);
+  border-radius: var(--eda-radius-sm);
+  background: var(--eda-bg-primary);
+  color: var(--eda-fg-primary);
+  font-family: var(--eda-font-family);
+  font-size: 12px;
+}
+
+.code-preview__actions {
+  display: flex;
+  gap: var(--eda-space-2);
+}
+
+.code-preview__btn-primary,
+.code-preview__btn-secondary {
+  flex: 1;
+  padding: var(--eda-space-2);
+  border-radius: var(--eda-radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.code-preview__btn-primary {
+  border: 1px solid var(--eda-border);
+  background: var(--eda-button-bg);
+  color: var(--eda-button-fg);
+}
+
+.code-preview__btn-secondary {
+  border: 1px solid var(--eda-border);
+  background: transparent;
+  color: var(--eda-fg-secondary);
+}

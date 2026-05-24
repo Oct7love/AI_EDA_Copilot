@@ -8,6 +8,7 @@ import { InputService } from './services/InputService';
 import { AiPipelineService } from './services/AiPipelineService';
 import { SessionStorageService } from './services/SessionStorageService';
 import { SessionManager } from './services/SessionManager';
+import { CodeAnalysisService } from './services/CodeAnalysisService';
 import { exportBomCsv } from './export/bomCsvExporter';
 import { exportMarkdown } from './export/markdownExporter';
 import { exportJson } from './export/jsonExporter';
@@ -23,6 +24,7 @@ export function activate(context: vscode.ExtensionContext): void {
   outputChannel.appendLine(`[${EXTENSION_ID}] activated`);
 
   const inputService = new InputService();
+  const codeAnalysisService = new CodeAnalysisService();
 
   // ── Side Panel Provider ──
   const sidePanelProvider = new SidePanelProvider(context.extensionUri);
@@ -153,6 +155,54 @@ export function activate(context: vscode.ExtensionContext): void {
           });
         });
         break;
+
+      case 'pick_code_folder': {
+        Promise.resolve(vscode.window.showOpenDialog({
+          canSelectFolders: true,
+          canSelectFiles: false,
+          canSelectMany: false,
+          openLabel: '选择固件代码文件夹',
+        })).then((picked) => {
+          if (!picked || picked.length === 0) {
+            sidePanelProvider.postMessage({
+              type: 'code_analysis_failed',
+              source: 'extension',
+              payload: { message: '未选择文件夹' },
+              timestamp: Date.now(),
+            });
+            return;
+          }
+          return codeAnalysisService.analyze(picked[0]).then((result) => {
+            sidePanelProvider.postMessage({
+              type: 'code_analysis_result',
+              source: 'extension',
+              payload: { result },
+              timestamp: Date.now(),
+            });
+            outputChannel.appendLine(`[code-analysis] scanned ${result.scannedFiles} files`);
+          });
+        }).catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          sidePanelProvider.postMessage({
+            type: 'code_analysis_failed',
+            source: 'extension',
+            payload: { message: msg },
+            timestamp: Date.now(),
+          });
+          outputChannel.appendLine(`[code-analysis] error: ${msg}`);
+        });
+        break;
+      }
+
+      case 'submit_code_analysis': {
+        const { result, notes } = message.payload;
+        const request = inputService.fromCodeAnalysis(result, notes);
+        sessionManager.mirrorUserMessage(`[代码分析] 已导入固件代码，扫描 ${result.scannedFiles} 个文件`);
+        outputChannel.appendLine(`[InputService] code_analysis → ${result.scannedFiles} files`);
+        // 不调 sessionManager.setInputMode：spec §8/§9 明定「代码」仅面板本地 UI 模式，不进协议层 inputMode；代码分析会话沿用此前 inputMode，origin 由镜像消息标识。
+        pipeline.runRequirementStage(request);
+        break;
+      }
     }
   });
 
