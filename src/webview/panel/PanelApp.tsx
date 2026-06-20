@@ -22,6 +22,7 @@ export function PanelApp(): React.ReactElement {
   const mode = useInputStore((s) => s.mode);
   const messages = useInputStore((s) => s.messages);
   const status = useInputStore((s) => s.status);
+  const isGenerating = useInputStore((s) => s.isGenerating);
   const addMessage = useInputStore((s) => s.addMessage);
   const appendToLastMessage = useInputStore((s) => s.appendToLastMessage);
   const setStatus = useInputStore((s) => s.setStatus);
@@ -88,6 +89,11 @@ export function PanelApp(): React.ReactElement {
     vscodeApi.postMessage(message);
   }, []);
 
+  const handleCancel = useCallback(() => {
+    // 取消当前分析：管线侧 abort AI 流 + 采购查询；UI 显示「已取消」而非错误
+    vscodeApi.postMessage(createMessage('cancel_analysis', 'panel', undefined));
+  }, []);
+
   return (
     <div className="panel-container">
       <header className="panel-header">
@@ -116,6 +122,11 @@ export function PanelApp(): React.ReactElement {
 
       {/* 输入区域 */}
       <div className="input-area">
+        {isGenerating && (
+          <button className="btn-cancel" onClick={handleCancel}>
+            取消分析
+          </button>
+        )}
         <InputModeToggle />
         {mode === 'chat' && <ChatInput />}
         {mode === 'form' && <FormInput />}
