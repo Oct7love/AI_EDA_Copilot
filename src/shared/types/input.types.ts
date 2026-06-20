@@ -33,6 +33,25 @@ export interface CodeAnalysisResult {
   ambiguousReferences: AmbiguousRef[];
   scannedFiles: number;               // 实际扫描的文件数（预览显示）
   truncated: boolean;                 // 是否因文件数/体积上限被截断
+  symbolConflicts?: SymbolConflict[]; // 跨文件同名引脚常量但值不同的冲突（可选，向后兼容）
+}
+
+/** 单个符号定义出处（文件 + 1-based 行号 + 字面量值） */
+export interface SymbolDefinition {
+  file: string;
+  line: number;
+  value: string;
+}
+
+/**
+ * 跨文件符号冲突：同一标识符在 2+ 处被 #define / const 定义为不同的引脚字面量值。
+ * 仅针对引脚常量；函数重载等不在范围内。
+ */
+export interface SymbolConflict {
+  symbol: string;
+  definitions: SymbolDefinition[];
+  conflictType: 'redefinition';
+  question: string;
 }
 
 export interface GpioUsage {
