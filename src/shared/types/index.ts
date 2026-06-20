@@ -22,6 +22,8 @@ export type {
   CodeAnalysisResult,
   GpioUsage,
   AmbiguousRef,
+  SymbolDefinition,
+  SymbolConflict,
 } from './input.types';
 
 export { createEmptyFormData } from './input.types';
@@ -58,12 +60,15 @@ export type {
 export type {
   ProcurementItem,
   ProcurementAlternative,
+  ProcurementQueryStatus,
 } from './procurement.types';
 
 export type {
   JlcComponent,
   JlcSearchResponse,
   JlcSearchParams,
+  JlcSearchFailureReason,
+  JlcSearchResult,
 } from './jlc.types';
 
 export type {

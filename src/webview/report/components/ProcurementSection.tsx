@@ -1,6 +1,5 @@
 /** 采购板块，兼容性概要 + 器件卡片 + 替代件 */
 import React, { useState, useMemo } from 'react';
-import type { ProcurementItem } from '../../../shared/types';
 import { createMessage } from '../../../shared/types';
 import vscodeApi from '../../shared/vscodeApi';
 import { useReportStore } from '../store/reportStore';
@@ -14,6 +13,17 @@ const COMPAT_CONFIG = {
   incompatible:  { label: '不兼容', cls: 'compat-bad' },
   unknown:       { label: '未知',   cls: 'compat-unknown' },
 } as const;
+
+/** 查询/库存状态标签（仅对需要提示的状态展示；in_stock 不额外加徽章） */
+const QUERY_STATUS_LABELS: Record<string, { label: string; cls: string }> = {
+  not_found:     { label: '未找到料号', cls: 'qs-warn' },
+  out_of_stock:  { label: '缺货',       cls: 'qs-warn' },
+  network_error: { label: '网络失败',   cls: 'qs-error' },
+  api_error:     { label: '接口异常',   cls: 'qs-error' },
+  parse_error:   { label: '数据异常',   cls: 'qs-error' },
+  timeout:       { label: '查询超时',   cls: 'qs-error' },
+  unknown:       { label: '未知',       cls: 'qs-warn' },
+};
 
 export function ProcurementSection(): React.ReactElement {
   const items = useReportStore((s) => s.procurementItems);
@@ -66,10 +76,18 @@ export function ProcurementSection(): React.ReactElement {
                 <span className="proc-footprint">{item.footprint}</span>
               </div>
               <div className="proc-item-badges">
-                <span className={`proc-compat-badge ${COMPAT_CONFIG[item.jlcCompatibility].cls}`}>
-                  {COMPAT_CONFIG[item.jlcCompatibility].label}
-                </span>
+                {(() => {
+                  const compat = COMPAT_CONFIG[item.jlcCompatibility] ?? COMPAT_CONFIG.unknown;
+                  return (
+                    <span className={`proc-compat-badge ${compat.cls}`}>{compat.label}</span>
+                  );
+                })()}
                 <span className="proc-match-type">{item.matchType}</span>
+                {QUERY_STATUS_LABELS[item.queryStatus] && (
+                  <span className={`proc-query-status ${QUERY_STATUS_LABELS[item.queryStatus].cls}`}>
+                    {QUERY_STATUS_LABELS[item.queryStatus].label}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -122,7 +140,7 @@ export function ProcurementSection(): React.ReactElement {
                         <span className="proc-alt-rank">#{alt.rank}</span>
                         <span
                           className="proc-link"
-                          onClick={() => handleLinkClick(alt.jlcProductUrl)}
+                          onClick={() => alt.jlcProductUrl && handleLinkClick(alt.jlcProductUrl)}
                         >
                           {alt.jlcPartNumber}
                         </span>
