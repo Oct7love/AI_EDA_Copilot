@@ -147,6 +147,24 @@
   font-family: var(--eda-font-mono, monospace);
 }
 
+/* 查询/库存状态徽章：区分真实无货与查询故障 */
+.proc-query-status {
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.proc-query-status.qs-warn {
+  color: var(--eda-status-warning, #cca700);
+  border: 1px solid var(--eda-status-warning, #cca700);
+}
+
+.proc-query-status.qs-error {
+  color: var(--eda-status-critical, #f14c4c);
+  border: 1px solid var(--eda-status-critical, #f14c4c);
+}
+
 /* JLC 信息行 */
 .proc-item-jlc {
   display: flex;
