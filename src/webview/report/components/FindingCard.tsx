@@ -20,7 +20,8 @@ interface FindingCardProps {
 }
 
 export function FindingCard({ finding }: FindingCardProps): React.ReactElement {
-  const sevConf = SEVERITY_CONFIG[finding.severity];
+  // 兜底：severity 来自 AI，可能漂移出枚举；缺省退回 info 样式，避免整页渲染抛错白屏
+  const sevConf = SEVERITY_CONFIG[finding.severity] ?? { label: finding.severity, cls: 'finding-info' };
 
   return (
     <div className={`finding-card ${sevConf.cls}`}>
