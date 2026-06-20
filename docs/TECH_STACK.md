@@ -308,7 +308,7 @@ type ReportSection =
 |------|------|------|------|
 | Commands | `extension/commands/` | 注册 VS Code 命令，调用 Service | `analyzeProject`, `generateBom`, `openReport` |
 | Providers | `extension/providers/` | 管理 Webview 生命周期，路由 postMessage | `SidePanelProvider`, `ReportPanelProvider` |
-| Services | `extension/services/` | 核心业务逻辑，不依赖 VS Code UI API | `AiPipelineService`, `EdaRuleEngine`, `ProcurementService`, `StorageService` |
+| Services | `extension/services/` | 核心业务逻辑，不依赖 VS Code UI API | `AiPipelineService`, `EdaRuleEngine`, `ProcurementService`, `SessionStorageService`（版本纯逻辑见 `versionStore.ts`） |
 | Shared | `shared/` | Extension 与 Webview 共享的类型和常量 | 消息协议类型、报告数据结构、EDA 领域类型 |
 
 ### 7.3 依赖方向
@@ -471,7 +471,10 @@ interface ProjectConfig {
 - 用户可手动删除任意版本
 - 用户可另存版本到本地任意路径
 
-### 10.4 StorageService 接口
+### 10.4 持久化接口（目标形态）
+
+> 命名与现状说明：当前已落地的服务是 `SessionStorageService`（会话文件读写、索引对账、串行写入队列），版本数组的纯逻辑（追加/淘汰/查找/迁移）集中在 `versionStore.ts`。
+> 下方 `StorageService` 接口为**目标设计形态**（多项目 / 多方案 / 报告版本 / 对话历史），描述演进方向，**尚未全部实现**；现状的会话存储为扁平结构（`.ai-eda/sessions/*.json` + `sessions.json` 索引），不要据此声称多方案/对话历史已交付。
 
 ```typescript
 interface StorageService {
@@ -506,6 +509,24 @@ interface StorageService {
   exportReportJson(projectId: string, schemeId: string, version: number): Promise<string>;
 }
 ```
+
+### 10.5 写入与恢复语义（`SessionStorageService`，现状实现）
+
+以下为现状行为约定，描述 `SessionStorageService` 的设计契约：
+
+- **原子写入**：会话文件与索引文件均采用「先写 `${target}.tmp` 临时文件，再 `rename` 覆盖目标」的方式落盘。
+  若写临时文件阶段崩溃，原目标文件保持完整（不会出现被截断的半文件）。
+- **rename 兜底**：在极少数不支持 `rename` 的环境下，回退为直接 `writeFile` 覆盖目标，并尽力清理残留 tmp 文件。
+  这是降级路径，原子性弱于 rename，仅作边缘环境兜底。
+- **串行写入队列**：所有写操作经 `enqueueWrite` 串行化以避免并发写冲突；调用方仍能感知本次写入自身的失败，
+  失败应向面板暴露而非静默吞掉。
+- **索引重建（仅恢复用途）**：`rebuildIndex()` 重扫 `sessions/` 下的会话文件重建 `sessions.json` 索引。
+  - **跳过损坏文件**：无法解析的文件计入 `skipped`，**绝不删除任何文件**。
+  - **保留孤儿文件**：「有文件但不在索引」的孤儿会话会被折回索引（恢复），不会自动删除任何用户数据。
+  - 该能力仅用于恢复/自愈，不在正常保存路径上触发。
+- **孤儿检测**：`findOrphanSessions()` 仅检测「有文件但不在索引」的孤儿 id，**只读不改盘**。
+
+> 说明：上述无后端、纯本地文件实现，原子性受底层文件系统 `rename` 语义约束；不声称跨平台强一致或事务级保证。
 
 ---
 
@@ -642,7 +663,7 @@ const outputChannel = vscode.window.createOutputChannel('AI EDA Copilot');
 ### 13.3 日志格式
 
 ```text
-[2026-03-07 14:30:00.123] [INFO] [AiPipeline] 开始 BOM 生成阶段，使用模型: claude-sonnet-4-20250514
+[2026-03-07 14:30:00.123] [INFO] [AiPipeline] 开始 BOM 生成阶段，使用模型: claude-sonnet-4-6
 [2026-03-07 14:30:05.456] [WARN] [Procurement] JLCPCB API 返回 429，触发重试 (1/10)
 [2026-03-07 14:30:20.789] [ERROR] [AiPipeline] 流式输出中断: NETWORK_ERROR
 ```
@@ -793,7 +814,8 @@ esbuild.build({
 | AiPipelineService | mock AiAdapter | 管线阶段调度、重试逻辑、JSON 解析 |
 | AiAdapter | mock OpenAI SDK | stream/complete 调用、错误分类 |
 | StreamBuffer | 单元测试 | 批量缓冲时序、flush 行为 |
-| StorageService | 文件系统集成测试 | 读写、版本淘汰、路径处理 |
+| SessionStorageService | 文件系统集成测试 | 读写、原子写入（tmp+rename）、索引重建（跳过损坏 / 保留孤儿）、路径处理 |
+| versionStore | 单元测试 | 版本追加 / 淘汰（>10）/ 查找 / 迁移纯逻辑 |
 | JlcAdapter | mock HTTP 响应 | API 调用、降级逻辑、错误处理 |
 | RuleEngineService | 单元测试 | 每条规则正例 + 反例 |
 

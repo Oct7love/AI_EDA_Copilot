@@ -507,7 +507,7 @@ src/
 
 ### 9.2 交付物
 
-- `StorageService`：JSON 文件读写 + 版本管理
+- `SessionStorageService`：JSON 文件读写 + 索引对账 + 串行写入队列（版本纯逻辑见 `versionStore.ts`）
 - 项目索引管理（index.json）
 - 方案管理（config.json + schemes/）
 - 报告版本存储（report-v{n}.json，最多 10 个）
@@ -522,7 +522,8 @@ src/
 src/
 ├─ extension/
 │  └─ services/
-│     └─ StorageService.ts            // 持久化服务
+│     ├─ SessionStorageService.ts     // 持久化服务（读写 + 索引对账 + 串行写队列）
+│     └─ versionStore.ts              // 版本数组纯逻辑（追加/淘汰/查找/迁移）
 ├─ webview/
 │  ├─ panel/
 │  │  └─ components/
@@ -595,8 +596,9 @@ src/
 │  │  ├─ CodeAnalysisService.ts       // 代码分析服务
 │  │  └─ InputService.ts             // 更新：支持 code_analysis 类型
 │  └─ analyzers/
-│     ├─ cAnalyzer.ts                 // C/C++ 代码分析
-│     └─ pythonAnalyzer.ts            // Python 代码分析
+│     └─ arduinoAnalyzer.ts           // [已实现] Arduino/ESP32 C/C++ 启发式扫描器
+│     // ├─ cAnalyzer.ts              // [计划/未实现] 通用 C/C++ 分析
+│     // └─ pythonAnalyzer.ts         // [计划/未实现] Python 分析（后续单独立项）
 ├─ webview/
 │  └─ panel/
 │     └─ components/
@@ -606,6 +608,8 @@ src/
 │  └─ types/
 │     └─ input.ts                     // 更新：CodeAnalysisResult
 ```
+
+> **实现状态说明**：Phase 8 实际以单个 `analyzers/arduinoAnalyzer.ts`（Arduino/ESP32 C/C++ 启发式扫描器）落地，配合 `CodeAnalysisService` 编排。上方 `cAnalyzer.ts` / `pythonAnalyzer.ts` 为原始规划项，**当前未实现**，作为后续扩展方向保留（Python 后续单独立项）。
 
 ### 10.4 验收标准
 
@@ -918,7 +922,7 @@ AI 辅助编程极易产生"能跑但没人理解"的代码。以下规则强制
 |------|------|
 | 开发方式 | 独立 worktree |
 | 手动验收 | 保存/加载报告、版本列表、多方案对比 |
-| 自动测试 | StorageService 读写测试、版本淘汰测试（>10 自动删除） |
+| 自动测试 | SessionStorageService 读写 + 原子写入（tmp+rename）+ 索引重建（跳过损坏 / 保留孤儿）测试；versionStore 版本淘汰测试（>10 自动删除） |
 | 集成测试 | 文件系统操作集成测试 |
 
 ### 14.9 Phase 8 — 代码分析输入

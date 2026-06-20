@@ -85,9 +85,9 @@ AI EDA Copilot V1 是无后端、纯本地的 VS Code 插件，没有自建后�
 | AI Orchestration | 按管线顺序调用 AI，管理流式输出和阶段状态 | `AiPipelineService` |
 | Artifact Generation | 将 AI 原始输出解析为强类型的 Artifact 对象 | `ArtifactParser`（内置于 Pipeline） |
 | Rule Validation | 对生成的 Artifact 执行规则校验，输出审查结果 | `RuleEngineService` |
-| Procurement Mapping | 查询 JLCPCB API，匹配料号，生成采购链接 | `ProcurementService` |
+| Procurement Mapping | 查询第三方搜索服务（jlcsearch），匹配料号，生成采购链接（有界并发、可取消） | `ProcurementService` |
 | Report Assembly | 将各阶段 Artifact 组装为完整报告 | `ReportAssembler`（内置于 Pipeline） |
-| Persistence | 本地文件读写、版本管理、导出 | `StorageService` |
+| Persistence | 本地文件读写、版本管理、导出 | `SessionStorageService`（会话读写）+ `versionStore.ts`（版本纯逻辑） |
 
 ### 3.3 调用关系
 
@@ -111,8 +111,28 @@ AiPipelineService ──────► RuleEngineService
 ReportAssembler ◄──── DesignReviewFindings
   │
   ▼
-StorageService（持久化报告 + 版本管理）
+SessionStorageService（持久化报告；版本逻辑由 versionStore.ts 提供，编排层调用）
 ```
+
+### 3.4 取消与生命周期（Cancellation & lifecycle）
+
+分析管线支持用户主动取消。设计上必须把以下三种结束态清晰区分，**不可混为一谈**：
+
+| 结束态 | 触发条件 | 语义 |
+|--------|----------|------|
+| **用户取消（USER CANCEL）** | 用户主动中止运行中的分析 | 良性的「已取消 / Cancelled」状态，**不是错误，也不是崩溃**；不重试 |
+| **请求超时（request TIMEOUT）** | 在 `requestTimeoutMs` 内未能建立 AI 响应 | 视为失败态，由应用层重试策略处理 |
+| **流空闲超时（stream IDLE TIMEOUT）** | 已建立流但 `streamIdleTimeoutMs` 内无新分片 | 流被判为停滞并中止 |
+
+取消时的行为约定：
+
+- 中止运行中的 AI 流式请求（abort in-flight stream）。
+- 中止进行中的采购查询（通过 `AbortSignal` 传播到 `ProcurementService` / `JlcAdapter`）。
+- 复位 running 状态（不残留「生成中」假象）。
+- 取消是**尽力而为（best-effort）**，且**不触发重试**——它表达「用户不想继续」，不等于失败。
+- 已 abort 的采购项以良性 `queryStatus: 'timeout'`（语义=「查询未完成，请重试」）兑现，**绝不误标为无货**。
+
+> 说明：取消是协作式的（基于 `AbortSignal` 与运行态标志），并非强制中断已经在途的网络回包；已发出的请求可能仍会返回，但其结果会被丢弃。
 
 ---
 
@@ -198,6 +218,12 @@ interface AmbiguousRef {
   question: string;
 }
 ```
+
+> **跨文件引脚常量冲突检测（启发式，非编译器）**：Arduino/ESP32 代码分析阶段会对**同名引脚常量在多个文件中被定义为不同字面量值**的情况做启发式检测（基于 `#define` / `const` 的正则匹配，先剥离注释保留行号）。
+> - 规则：同一符号出现 ≥2 个不同字面量值 → 记为 `redefinition` 冲突；相同值重复或仅定义一次 → 不算冲突。
+> - 每条冲突携带各定义出处的 `file:line` 与对应 value，并附一个待澄清的问题（「应以哪个为准？」）。
+> - 结果在侧边栏代码分析预览中展示，并折回 `ambiguousReferences`，**需要人工复核**确认正确取值。
+> - 这是基于正则的启发式判断，**不是编译器 / 预处理器**：不解析宏展开、条件编译（`#ifdef`）或作用域，可能漏报或误报，仅作提示用途。
 
 ### 4.3 BOMItem
 
@@ -815,6 +841,8 @@ interface AiStreamChunk {
 
 当前实现基于 `openai` SDK + 用户配置的 Base URL。构造函数接受可选 `log` 回调用于诊断日志输出。`separateSystemMessages()` 将 `role: "system"` 消息提取为顶层 `system` 参数，兼容 Anthropic Messages API 格式的中转站。若中转站协议变更，仅需替换 `AiAdapter` 实现。
 
+流式调用支持取消：`stream()` 接受 `AbortSignal`，用户取消时中止在途请求（见 §3.4）。请求建立超时由 `requestTimeoutMs` 控制；流建立后若 `streamIdleTimeoutMs` 内无新分片，则按「流空闲超时」中止。这三种结束态（用户取消 / 请求超时 / 流空闲超时）语义不同，须分别呈现，不可混淆。
+
 ### 10.3 JlcAdapter
 
 ```typescript
@@ -854,6 +882,22 @@ interface JlcStockInfo {
 ```
 
 降级时报告中标注"库存数据来源：备选接口，可能不完全准确"。
+
+> 现状说明：当前采购匹配主要依赖第三方搜索服务 **jlcsearch**，并非 JLCPCB 官方 API 的已验证集成。匹配仅基于「comment + footprint」全文检索 + 封装字符串比对，未校验电气值/电压/容差/MPN，故所有匹配统一标 `partial`（待人工确认），不声称「已验证兼容」。
+
+### 10.5 采购匹配并发与查询状态（`ProcurementService`，现状实现）
+
+`matchAll(bomItems, onProgress?, signal?)` 的设计契约：
+
+- **有界并发**：通过 `mapLimit` 限制同时在飞的查询数（默认上限 5），在限制第三方接口压力与整体提速之间折中；已不再串行 + 固定 sleep。
+- **可取消**：传入 `AbortSignal`；已 abort 后剩余项不再发起 fetch，中止项以良性 `queryStatus: 'timeout'` 兑现（语义=「未完成查询，请重试」，**不等于无货**）。
+- **进度回调**：每完成一项触发一次 `onProgress(completed, total)`；UI 可据此呈现总数 / 完成数 / 失败数。
+- **查询失败 ≠ 无货**：`queryStatus` 明确区分以下两类状态——
+  - 查询失败（`network_error` / `api_error` / `parse_error` / `timeout`）：接口/网络/解析层面没拿到可信结果，标 `smtReadiness: 'manual_only'`，提示稍后重试，**不得读作「无货」**。
+  - 真实结果（`in_stock` / `out_of_stock` / `not_found`）：接口正常返回后的库存/匹配结论。
+- `matchSingle` **永不抛异常**，所有失败/中止都以 `queryStatus` 表达，避免单项失败拖垮整批匹配。
+
+> 该层依赖外部第三方服务，结果为点对点时刻快照，库存/价格不保证实时准确；务必在采购前人工核对值、额定参数与 MPN。
 
 ---
 
@@ -923,17 +967,25 @@ interface JlcStockInfo {
 
 | Adapter | 必须覆盖的场景 |
 |---------|---------------|
-| AiAdapter | 正常流式返回、中途断流重试、AUTH_ERROR 不重试、RATE_LIMIT 重试、配置变更重建客户端 |
-| JlcAdapter | 精确匹配、无匹配降级、全失败兜底、库存查询超时 |
+| AiAdapter | 正常流式返回、中途断流重试、AUTH_ERROR 不重试、RATE_LIMIT 重试、配置变更重建客户端、用户取消（AbortSignal）不重试且呈良性「已取消」、请求超时与流空闲超时各自区分 |
+| JlcAdapter | 精确匹配、无匹配降级、全失败兜底、库存查询超时、AbortSignal 中止后不再发起查询 |
+| ProcurementService.matchAll | 有界并发（默认 5）、onProgress 完成计数、abort 后剩余项以良性 timeout 兑现、查询失败（network/api/parse/timeout）与无货/未找到状态区分 |
 
-### 12.5 StorageService 测试要求
+### 12.5 SessionStorageService 测试要求
+
+> 实现说明：持久化由 `SessionStorageService` 负责（会话文件读写、索引对账、串行写入队列），版本数组的追加/淘汰/查找/迁移等纯逻辑集中在 `versionStore.ts`（`MAX_VERSIONS = 10`，可独立单测）。下表“版本淘汰”等版本相关用例对应 `versionStore.ts`。
 
 | 测试用例 | 期望行为 |
 |----------|----------|
-| 首次创建项目 | index.json 创建、目录结构正确 |
-| 保存报告版本 | report-v{n}.json 写入正确 |
-| 版本淘汰（>10） | 最旧版本自动删除 |
-| 删除项目 | 目录和 index 条目同步清理 |
+| 首次创建会话 | sessions.json 索引创建、目录结构正确 |
+| 保存会话 | 会话文件写入正确、索引条目更新 |
+| 原子写入 | 写入经 tmp + rename；写 tmp 阶段失败时原目标文件保持完整 |
+| rename 不可用兜底 | 回退为直接 writeFile，并尽力清理残留 tmp |
+| 版本淘汰（>10） | 最旧版本自动删除（纯逻辑见 `versionStore.ts`） |
+| 索引重建（rebuildIndex） | 重扫会话文件重建索引；损坏文件计入 skipped 且不删除；孤儿文件折回索引、零数据丢失 |
+| 孤儿检测（findOrphanSessions） | 仅返回「有文件但不在索引」的 id，只读不改盘 |
+| 删除会话 | 文件与索引条目同步清理（先改索引再删文件，中途失败仅留可回收孤儿） |
+| 保存失败 | 错误向调用方/面板暴露，不被静默吞掉 |
 | 导出 CSV | 文件名规范、字段完整 |
 
 ### 12.6 可测边界定义
@@ -944,7 +996,7 @@ interface JlcStockInfo {
 ├── Pipeline 阶段依赖与级联失效
 ├── 规则引擎每条规则
 ├── Adapter 层错误分类与重试
-├── StorageService 版本管理
+├── SessionStorageService 读写 + versionStore.ts 版本管理
 └── 消息协议 Extension ↔ Webview 格式一致性
 
 不需要单元测试的部分（手动验收即可）：
