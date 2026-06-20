@@ -4,6 +4,9 @@
  */
 import type { Rule, RuleContext, DesignReviewFinding } from '@shared/types';
 
+// 单调递增序号，保证同一毫秒内多条 finding 的 id 唯一（修复 Date.now() 碰撞）
+let seq = 0;
+
 function finding(
   ruleId: string,
   title: string,
@@ -13,7 +16,7 @@ function finding(
   stage: DesignReviewFinding['stage'] = 'pcb_layout',
 ): DesignReviewFinding {
   return {
-    id: `${ruleId}-${Date.now()}`,
+    id: `${ruleId}-${Date.now()}-${seq++}`,
     category: 'layout',
     severity: 'warning',
     title,

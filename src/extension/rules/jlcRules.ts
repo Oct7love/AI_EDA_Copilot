@@ -4,7 +4,10 @@
  */
 import type { Rule, RuleContext, DesignReviewFinding } from '@shared/types';
 
-/** 嘉立创常见封装前缀列表（不完整，V1 启发式匹配） */
+/**
+ * 内置常见封装前缀启发式列表（不完整，非官方封装库查询）。
+ * 注意：不含 'SMD' / 'SMT' 这类宽泛词——它们会让几乎任意含该子串的封装都「命中」，使检查形同虚设。
+ */
 const JLC_COMMON_FOOTPRINTS = [
   '0201', '0402', '0603', '0805', '1206', '1210', '2512',
   'SOT-23', 'SOT-223', 'SOT-363', 'SOT-89',
@@ -14,8 +17,10 @@ const JLC_COMMON_FOOTPRINTS = [
   'BGA-',
   'TO-252', 'TO-263', 'TO-220',
   'USB-', 'TYPE-C',
-  'SMD', 'SMT',
 ];
+
+// 单调递增序号，保证同一毫秒内多条 finding 的 id 唯一（修复 Date.now() 碰撞）
+let seq = 0;
 
 function finding(
   ruleId: string,
@@ -27,7 +32,7 @@ function finding(
   stage: DesignReviewFinding['stage'] = 'bom',
 ): DesignReviewFinding {
   return {
-    id: `${ruleId}-${Date.now()}`,
+    id: `${ruleId}-${Date.now()}-${seq++}`,
     category: 'footprint_match',
     severity,
     title,
@@ -40,13 +45,13 @@ function finding(
   };
 }
 
-/** JR-001: 封装是否在嘉立创常见封装库中 */
+/** JR-001: 封装未命中内置常见封装启发式列表（info，非官方库查询） */
 const JR001: Rule = {
   id: 'JR-001',
   category: 'jlc_compatibility',
   severity: 'info',
-  title: '封装是否在嘉立创封装库中',
-  description: '检查元器件封装是否属于嘉立创常见封装，非常见封装可能无法贴装',
+  title: '封装未命中常见封装启发式列表',
+  description: '基于内置的常见封装启发式列表做匹配（非嘉立创官方封装库查询），未命中仅作提示，请以官方封装库为准',
   appliesTo: ['bom'],
   enabled: true,
   check(ctx: RuleContext): DesignReviewFinding[] {
@@ -62,9 +67,9 @@ const JR001: Rule = {
       finding(
         'JR-001',
         'info',
-        `${item.designator} 使用非常见封装 ${item.footprint}`,
-        `元器件 ${item.designator}（${item.comment}）封装 ${item.footprint} 不在嘉立创常见封装列表中`,
-        '请确认该封装在嘉立创封装库中可用，或考虑更换为标准封装',
+        `${item.designator} 封装 ${item.footprint} 未命中常见封装启发式列表`,
+        `元器件 ${item.designator}（${item.comment}）封装 ${item.footprint} 未命中内置常见封装启发式列表（非官方库查询），请人工确认其在嘉立创封装库中可用`,
+        '请以嘉立创官方封装库为准确认该封装可用，或考虑更换为更常见的标准封装',
         [item.designator],
       ),
     );

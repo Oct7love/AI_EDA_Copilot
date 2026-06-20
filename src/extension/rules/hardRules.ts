@@ -4,6 +4,9 @@
  */
 import type { Rule, RuleContext, DesignReviewFinding } from '@shared/types';
 
+// 单调递增序号，保证同一毫秒内多条 finding 的 id 唯一（修复 Date.now() 碰撞 → React key 冲突）
+let seq = 0;
+
 function finding(
   ruleId: string,
   title: string,
@@ -11,11 +14,12 @@ function finding(
   suggestion: string,
   affected: string[],
   stage: DesignReviewFinding['stage'] = 'bom',
+  severity: DesignReviewFinding['severity'] = 'critical',
 ): DesignReviewFinding {
   return {
-    id: `${ruleId}-${Date.now()}`,
+    id: `${ruleId}-${Date.now()}-${seq++}`,
     category: 'general',
-    severity: 'critical',
+    severity,
     title,
     description,
     affectedComponents: affected,
@@ -82,13 +86,17 @@ const HR002: Rule = {
   },
 };
 
-/** HR-003: 电源引脚必须有去耦电容 */
+/**
+ * HR-003: 去耦电容覆盖（启发式估计，warning）
+ * 仅按「IC 数量 vs 典型去耦电容数量」粗略比对存在性，无法在 BOM 阶段判断逐个电源引脚的实际充分性，
+ * 故降级为 warning 并在文案中标注需人工复核，避免给出过度自信的「critical 通过/不通过」结论。
+ */
 const HR003: Rule = {
   id: 'HR-003',
   category: 'hard',
-  severity: 'critical',
-  title: '电源引脚必须有去耦电容',
-  description: 'IC 电源引脚附近必须配置去耦电容以抑制电源噪声',
+  severity: 'warning',
+  title: '去耦电容覆盖（启发式估计）',
+  description: '基于 IC 数量与典型去耦电容数量的粗略比对，仅检查去耦电容的存在性而非逐脚充分性，需人工结合原理图/布局复核',
   appliesTo: ['bom', 'schematic'],
   enabled: true,
   check(ctx: RuleContext): DesignReviewFinding[] {
@@ -116,11 +124,12 @@ const HR003: Rule = {
       return [
         finding(
           'HR-003',
-          `去耦电容不足（${capCount} 个 / ${icCount} 个 IC）`,
-          `检测到 ${icCount} 个 IC 但仅有 ${capCount} 个典型去耦电容（100nF/0.1uF），可能存在电源去耦不足`,
-          '建议为每个 IC 电源引脚至少配置一个 100nF 去耦电容',
+          `去耦电容可能不足（${capCount} 个 / ${icCount} 个 IC，启发式估计）`,
+          `按数量粗估：${icCount} 个 IC 仅匹配到 ${capCount} 个典型去耦电容（100nF/0.1uF）。这是基于数量的启发式判断，不代表逐个电源引脚的实际充分性，请结合原理图人工确认`,
+          '建议为每个 IC 的每个电源引脚就近配置至少一个 100nF 去耦电容，并人工复核',
           ics,
           'cross_stage',
+          'warning',
         ),
       ];
     }

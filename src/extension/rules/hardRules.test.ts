@@ -71,17 +71,17 @@ describe('HR-002: 位号不可重复', () => {
   });
 });
 
-describe('HR-003: 电源引脚必须有去耦电容', () => {
+describe('HR-003: 去耦电容覆盖（启发式估计）', () => {
   const rule = findRule('HR-003');
 
-  it('IC 多于去耦电容时触发', () => {
+  it('IC 多于去耦电容时触发（已降级为 warning，诚实化）', () => {
     const ctx = emptyCtx([
       makeBom({ designator: 'U1', category: 'MCU' }),
       makeBom({ designator: 'U2', category: 'Sensor' }),
     ]);
     const findings = rule.check(ctx);
     expect(findings).toHaveLength(1);
-    expect(findings[0].severity).toBe('critical');
+    expect(findings[0].severity).toBe('warning');
   });
 
   it('去耦电容充足时不触发', () => {
