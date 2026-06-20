@@ -41,11 +41,12 @@ describe('runAllRules', () => {
       procurementItems: [],
     };
     const result = runAllRules(ctx);
-    // 至少应有 HR-001（空封装）+ HR-002（重复位号）+ HR-003（去耦不足）
-    expect(result.summary.criticalCount).toBeGreaterThanOrEqual(3);
+    // HR-001（空封装）+ HR-002（重复位号）为 critical；HR-003（去耦覆盖）已诚实化降级为 warning
+    expect(result.summary.criticalCount).toBeGreaterThanOrEqual(2);
     expect(result.findings.some((f) => f.id.startsWith('HR-001'))).toBe(true);
     expect(result.findings.some((f) => f.id.startsWith('HR-002'))).toBe(true);
-    expect(result.findings.some((f) => f.id.startsWith('HR-003'))).toBe(true);
+    const hr003 = result.findings.find((f) => f.id.startsWith('HR-003'));
+    expect(hr003?.severity).toBe('warning');
   });
 
   it('JR-002 检测无料号器件', () => {
