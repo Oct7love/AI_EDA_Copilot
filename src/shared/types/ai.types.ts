@@ -11,6 +11,8 @@ export interface AiCompletionParams {
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+  /** 用户取消信号：abort 后中断底层请求并以 CANCELLED 结束 */
+  signal?: AbortSignal;
 }
 
 export interface AiStreamChunk {
@@ -27,9 +29,10 @@ export type AiErrorCode =
   | 'INVALID_REQUEST'
   | 'QUOTA_EXCEEDED'
   | 'PARSE_ERROR'
+  | 'CANCELLED'
   | 'UNKNOWN';
 
-/** 可重试的错误码集合 */
+/** 可重试的错误码集合（注意：CANCELLED 不可重试——用户取消应立即停止） */
 export const RETRYABLE_ERRORS: ReadonlySet<AiErrorCode> = new Set([
   'NETWORK_ERROR',
   'TIMEOUT',
