@@ -9,6 +9,7 @@
 import type * as vscode from 'vscode';
 import type { ChatMessage, SessionData, SessionIndexEntry, SessionArtifacts, ReportVersion, ReportVersionMeta } from '@shared/types';
 import { appendVersion, findVersion, removeVersion, buildVersionLabel } from './versionStore';
+import { collectArtifacts, normalizeArtifacts } from './artifactCollector';
 import type { SessionStorageService } from './SessionStorageService';
 import type { AiPipelineService } from './AiPipelineService';
 import type { ArtifactStateService } from './ArtifactStateService';
@@ -67,17 +68,28 @@ export class SessionManager {
 
   // ─── 内部 helper ──────────────────────────────────────
 
-  /** 从 pipeline 缓存收集当前产物快照（与 saveCurrentSession 口径一致） */
+  /** 会话保存失败：记录日志并向 Panel 推送错误，让 UI 感知写盘失败 */
+  private reportSaveFailure(where: string, err: unknown): void {
+    const message = err instanceof Error ? err.message : String(err);
+    this.outputChannel.appendLine(`[SessionManager] ${where} save failed: ${message}`);
+    this.panelProvider.postMessage({
+      type: 'error',
+      source: 'extension',
+      payload: { code: 'SAVE_FAILED', message: '会话保存失败' },
+      timestamp: Date.now(),
+    });
+  }
+
+  /** 从 pipeline 缓存收集当前产物快照（含 procurement / designReview / overview） */
   private collectCurrentArtifacts(): SessionArtifacts {
-    return {
+    return collectArtifacts({
       requirementSpec: this.pipeline.lastSpec,
-      overview: null, // deriveOverview 是纯函数，加载时重新派生
       bomItems: this.pipeline.lastBomItems,
-      procurementItems: [],
+      procurementItems: this.pipeline.lastProcurementItems,
       schematicIntent: this.pipeline.lastSchematic,
       pcbLayoutPlan: this.pipeline.lastPcbLayout,
-      designReviewResult: null, // 暂不缓存在 pipeline 上（既有限制）
-    };
+      designReviewResult: this.pipeline.lastDesignReviewResult,
+    });
   }
 
   /** 把一套产物推送到 Report（从 switchSession 提取，restore 复用） */
@@ -190,7 +202,12 @@ export class SessionManager {
       versions: existing?.versions ?? [],
     };
 
-    await this.storage.saveSession(data);
+    try {
+      await this.storage.saveSession(data);
+    } catch (err) {
+      this.reportSaveFailure('saveCurrentSession', err);
+      throw err;
+    }
     this.currentSessionId = id;
 
     this.panelProvider.postMessage({
@@ -217,8 +234,10 @@ export class SessionManager {
     this.inputMode = 'chat';
     this.pipeline.lastSpec = null;
     this.pipeline.lastBomItems = [];
+    this.pipeline.lastProcurementItems = [];
     this.pipeline.lastSchematic = null;
     this.pipeline.lastPcbLayout = null;
+    this.pipeline.lastDesignReviewResult = null;
     this.artifactState?.resetAll();
 
     // 通知 Panel 和 Report 清空
@@ -255,11 +274,14 @@ export class SessionManager {
     this.conversationMirror = [...data.conversation];
     this.inputMode = data.inputMode;
 
-    // 恢复 pipeline 缓存
-    this.pipeline.lastSpec = data.artifacts.requirementSpec;
-    this.pipeline.lastBomItems = data.artifacts.bomItems;
-    this.pipeline.lastSchematic = data.artifacts.schematicIntent;
-    this.pipeline.lastPcbLayout = data.artifacts.pcbLayoutPlan;
+    // 恢复 pipeline 缓存（规整旧/缺字段快照，避免后续访问崩溃 + 找回 procurement/designReview）
+    const arts = normalizeArtifacts(data.artifacts);
+    this.pipeline.lastSpec = arts.requirementSpec;
+    this.pipeline.lastBomItems = arts.bomItems;
+    this.pipeline.lastProcurementItems = arts.procurementItems;
+    this.pipeline.lastSchematic = arts.schematicIntent;
+    this.pipeline.lastPcbLayout = arts.pcbLayoutPlan;
+    this.pipeline.lastDesignReviewResult = arts.designReviewResult;
 
     // 推送对话到 Panel
     this.panelProvider.postMessage({
@@ -277,7 +299,7 @@ export class SessionManager {
 
     // 推送产物到 Report（restore 复用同一 helper）
     this.currentVersionId = null;
-    this.pushArtifactsToReport(data.artifacts);
+    this.pushArtifactsToReport(arts);
     this.pushVersionList(data);
 
     this.outputChannel.appendLine(`[SessionManager] switched to session: ${id} (${data.name})`);
@@ -314,7 +336,12 @@ export class SessionManager {
     data.versions = appendVersion(data.versions, snapshot);
     data.artifacts = snapshot.artifacts; // 顶层镜像最新版
     data.updatedAt = createdAt;
-    await this.storage.saveSession(data);
+    try {
+      await this.storage.saveSession(data);
+    } catch (err) {
+      this.reportSaveFailure('snapshotVersion', err);
+      throw err;
+    }
 
     this.currentVersionId = snapshot.id;
     this.pushVersionList(data);
@@ -332,11 +359,13 @@ export class SessionManager {
       return;
     }
 
-    const a = version.artifacts;
+    const a = normalizeArtifacts(version.artifacts);
     this.pipeline.lastSpec = a.requirementSpec;
     this.pipeline.lastBomItems = a.bomItems;
+    this.pipeline.lastProcurementItems = a.procurementItems;
     this.pipeline.lastSchematic = a.schematicIntent;
     this.pipeline.lastPcbLayout = a.pcbLayoutPlan;
+    this.pipeline.lastDesignReviewResult = a.designReviewResult;
 
     data.artifacts = { ...a }; // 顶层镜像被恢复的版本（浅拷贝，与版本内 artifacts 解耦引用）
     data.updatedAt = new Date().toISOString();
@@ -361,11 +390,24 @@ export class SessionManager {
     this.outputChannel.appendLine(`[SessionManager] deleted version: ${versionId}`);
   }
 
+  /**
+   * 重建会话索引（自愈）：扫描磁盘会话文件重建 sessions.json，把孤儿折回索引。
+   * 损坏文件被跳过、不删除。结果记日志，供未来命令调用；此处不接任何 UI/命令。
+   */
+  async rebuildSessionIndex(): Promise<{ rebuilt: number; skipped: number }> {
+    const result = await this.storage.rebuildIndex();
+    this.outputChannel.appendLine(
+      `[SessionManager] rebuilt session index: rebuilt=${result.rebuilt} skipped=${result.skipped}`,
+    );
+    return result;
+  }
+
   /** 取某版本的产物快照（用于按版本导出），未找到返回 null */
   async getVersionArtifacts(versionId: string): Promise<SessionArtifacts | null> {
     if (!this.currentSessionId) return null;
     const data = await this.storage.loadSession(this.currentSessionId);
     if (!data) return null;
-    return findVersion(data.versions, versionId)?.artifacts ?? null;
+    const found = findVersion(data.versions, versionId);
+    return found ? normalizeArtifacts(found.artifacts) : null;
   }
 }
