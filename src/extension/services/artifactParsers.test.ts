@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   extractJson,
+  extractJsonCandidates,
   repairJson,
   parseJsonArtifact,
   parseSchematicIntent,
@@ -47,6 +48,71 @@ describe('extractJson', () => {
   });
 });
 
+// ── extractJson 括号配平扫描 ───────────────────────────
+
+describe('extractJson 括号配平', () => {
+  it('纯 JSON 对象原样返回', () => {
+    expect(extractJson('{"a":1}')).toBe('{"a":1}');
+  });
+
+  it('纯 JSON 数组原样返回', () => {
+    expect(extractJson('[1,2,3]')).toBe('[1,2,3]');
+  });
+
+  it('忽略字符串内部的大括号', () => {
+    const text = '{"a":"}{"}';
+    expect(extractJson(text)).toBe('{"a":"}{"}');
+    expect(JSON.parse(extractJson(text))).toEqual({ a: '}{' });
+  });
+
+  it('忽略字符串内部的转义引号', () => {
+    const text = '{"a":"x\\"y"}';
+    expect(JSON.parse(extractJson(text))).toEqual({ a: 'x"y' });
+  });
+
+  it('嵌套对象与数组配平正确', () => {
+    const text = 'prefix {"a":[1,{"b":2}],"c":"}"} suffix';
+    expect(JSON.parse(extractJson(text))).toEqual({ a: [1, { b: 2 }], c: '}' });
+  });
+
+  it('不完整 JSON 返回从起点到结尾的片段', () => {
+    expect(extractJson('{"a":1')).toBe('{"a":1');
+  });
+});
+
+describe('extractJsonCandidates 多候选', () => {
+  it('枚举多段顶层 JSON', () => {
+    expect(extractJsonCandidates('{"a":1} 然后 {"b":2}')).toEqual(['{"a":1}', '{"b":2}']);
+  });
+
+  it('fenced 代码块优先', () => {
+    const text = '说明\n```json\n{"a":1}\n```\n结尾 {"b":2}';
+    expect(extractJsonCandidates(text)).toEqual(['{"a":1}']);
+  });
+
+  it('无候选时返回空数组', () => {
+    expect(extractJsonCandidates('no json here')).toEqual([]);
+  });
+});
+
+describe('parseJsonArtifact 多候选选择', () => {
+  it('跳过不匹配的前置候选，选中符合校验的候选', () => {
+    // 第一个候选是无关数组，第二个才是目标对象
+    const text = '参考 [1,2,3] 真正结果 {"modules":[],"connections":[]}';
+    const result = parseJsonArtifact<{ modules: unknown[] }>(text, (p) =>
+      Array.isArray(p?.modules) && Array.isArray(p?.connections) ? p : null,
+    );
+    expect(result).toEqual({ modules: [], connections: [] });
+  });
+
+  it('不完整 JSON 无法修复时返回 null', () => {
+    const result = parseJsonArtifact<{ a: number }>('{"a":1', (p) =>
+      typeof p?.a === 'number' ? p : null,
+    );
+    expect(result).toBeNull();
+  });
+});
+
 // ── repairJson ────────────────────────────────────────
 
 describe('repairJson', () => {
@@ -58,8 +124,20 @@ describe('repairJson', () => {
     expect(repairJson('[1,2,3,]')).toBe('[1,2,3]');
   });
 
-  it('单引号替换为双引号', () => {
+  it('单引号字面量替换为双引号', () => {
     expect(repairJson("{'a':'b'}")).toBe('{"a":"b"}');
+  });
+
+  it('保留双引号字符串内部的撇号（不破坏合法值）', () => {
+    // 旧实现会把 don't 的撇号也换成双引号，导致字符串提前终止
+    expect(repairJson('{"comment":"don\'t place",}')).toBe('{"comment":"don\'t place"}');
+    const parsed = JSON.parse(repairJson('{"comment":"LDO\'s output",}'));
+    expect(parsed.comment).toBe("LDO's output");
+  });
+
+  it('混合：单引号 key + 双引号值含撇号', () => {
+    const out = repairJson("{'comment':\"it's fine\",}");
+    expect(JSON.parse(out)).toEqual({ comment: "it's fine" });
   });
 });
 

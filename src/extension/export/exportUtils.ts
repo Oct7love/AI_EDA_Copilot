@@ -23,10 +23,21 @@ export function generateExportFilename(projectName: string, type: string, ext: s
   return `${safeName}-${ts}-${type}.${ext}`;
 }
 
-/** CSV 字段转义（逗号、引号、换行） */
+/**
+ * CSV 字段转义（逗号、引号、换行）+ 公式注入防护。
+ *
+ * 安全：BOM 字段（comment/designator/footprint/料号）来自 AI 输出，可能以
+ * = + - @ 或制表符/回车开头。这类单元格在 Excel / Google Sheets / WPS 打开时会被
+ * 当作公式执行（DDE / 数据外泄）。导出的 CSV 正是面向嘉立创 SMT 的交付物，
+ * 极可能被电子表格打开，因此对危险前缀加单引号守卫后再做标准引用。
+ */
 export function csvEscape(value: string): string {
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-    return `"${value.replace(/"/g, '""')}"`;
+  let v = value ?? '';
+  if (/^[=+\-@\t\r]/.test(v)) {
+    v = `'${v}`;
   }
-  return value;
+  if (v.includes(',') || v.includes('"') || v.includes('\n')) {
+    return `"${v.replace(/"/g, '""')}"`;
+  }
+  return v;
 }
