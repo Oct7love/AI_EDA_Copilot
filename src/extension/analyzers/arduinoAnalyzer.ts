@@ -2,7 +2,13 @@
  * Arduino/ESP32 固件代码启发式扫描器 — 纯函数，无 vscode 依赖。
  * 提取库引用 / GPIO 使用 / 外设 / 模糊引用，供 CodeAnalysisService 编排调用。
  */
-import type { GpioUsage, AmbiguousRef, CodeAnalysisResult } from '@shared/types';
+import type {
+  GpioUsage,
+  AmbiguousRef,
+  CodeAnalysisResult,
+  SymbolConflict,
+  SymbolDefinition,
+} from '@shared/types';
 
 /** 待分析的源文件 */
 export interface SourceFile {
@@ -63,6 +69,76 @@ export function buildSymbolTable(code: string): Map<string, string> {
     }
   }
   return resolved;
+}
+
+/**
+ * 去掉注释但保留换行，用于在按行计算行号时保持位置对齐。
+ * 块注释里的换行被保留为换行，注释内容替换为空格，避免误匹配且不破坏行号。
+ */
+function stripCommentsKeepLines(code: string): string {
+  return code
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ' '));
+}
+
+/** 引脚常量定义的提取规则：#define 与 const 整型，捕获 标识符 + 值 */
+const PIN_DEFINE_PATTERNS = [
+  /#define\s+([A-Za-z_]\w*)\s+([A-Za-z_]\w*|\d+)/g,
+  /\bconst(?:expr)?\s+(?:int|uint\d+_t|byte|short|unsigned\s+int)\s+([A-Za-z_]\w*)\s*=\s*([A-Za-z_]\w*|\d+)\s*;/g,
+];
+
+/**
+ * 跨文件扫描引脚常量定义，找出「同名但值不同」的冲突。
+ * 仅收录值为引脚字面量（纯数字 / A0…）的定义，避免对表达式宏、别名宏误报。
+ * 逐文件处理，按注释剥离后的文本（保留行号）匹配，记录 file + 1-based line + value。
+ *
+ * 规则：
+ * - 相同值重复定义 → 不算冲突
+ * - 仅定义一次 → 不算冲突
+ * - 2+ 处定义出现 ≥2 个不同字面量值 → 记为冲突
+ */
+export function detectSymbolConflicts(files: SourceFile[]): SymbolConflict[] {
+  // symbol → 全部定义出处（含重复值，用于去重判断与展示）
+  const defs = new Map<string, SymbolDefinition[]>();
+
+  for (const f of files) {
+    const cleaned = stripCommentsKeepLines(f.content);
+    for (const re of PIN_DEFINE_PATTERNS) {
+      for (const m of cleaned.matchAll(re)) {
+        const name = m[1];
+        const value = m[2];
+        if (!isPinLiteral(value)) continue; // 非引脚字面量不参与冲突判定
+        const index = m.index ?? 0;
+        // 1-based 行号：匹配位置前的换行数 + 1
+        const line = countNewlines(cleaned, index) + 1;
+        const list = defs.get(name) ?? [];
+        list.push({ file: f.path, line, value });
+        defs.set(name, list);
+      }
+    }
+  }
+
+  const conflicts: SymbolConflict[] = [];
+  for (const [symbol, list] of defs) {
+    const distinctValues = new Set(list.map((d) => d.value));
+    if (distinctValues.size < 2) continue; // 单值（含相同值重复）→ 非冲突
+    conflicts.push({
+      symbol,
+      definitions: list,
+      conflictType: 'redefinition',
+      question: `\`${symbol}\` 在多处被定义为不同的引脚值（${[...distinctValues].join(' / ')}）——应以哪个为准？`,
+    });
+  }
+  return conflicts.sort((a, b) => a.symbol.localeCompare(b.symbol));
+}
+
+/** 统计 text 在 [0, index) 区间内的换行数（用于推算行号） */
+function countNewlines(text: string, index: number): number {
+  let count = 0;
+  for (let i = 0; i < index && i < text.length; i++) {
+    if (text[i] === '\n') count++;
+  }
+  return count;
 }
 
 /** 提取 #include 库（去重、排序、过滤系统头） */
@@ -178,16 +254,35 @@ export function extractPeripherals(code: string): string[] {
   return [...found].sort();
 }
 
+/**
+ * 跨文件符号冲突 → AmbiguousRef，使其经现有报告路径流入 openQuestions（无需改 UI）。
+ * 与 symbolConflicts 内容保持一致：reference=符号名，question 复用冲突问题。
+ */
+function conflictsToAmbiguous(conflicts: SymbolConflict[]): AmbiguousRef[] {
+  return conflicts.map((c) => ({
+    reference: c.symbol,
+    possibleMeanings: c.definitions.map((d) => `${d.value}（${d.file}:${d.line}）`),
+    question: c.question,
+  }));
+}
+
 /** 主入口：合并所有文件做整体扫描 */
 export function analyzeArduinoCode(files: SourceFile[]): ArduinoAnalysis {
   const merged = stripComments(files.map((f) => f.content).join('\n'));
   const symbols = buildSymbolTable(merged);
   const { gpios, ambiguous } = extractGpios(merged, symbols);
-  return {
+  // 跨文件引脚常量冲突（逐文件，带 file+line）——避免符号表 first-write-wins 静默丢值（EDA-7）
+  const symbolConflicts = detectSymbolConflicts(files);
+  const result: ArduinoAnalysis = {
     language: 'cpp',
     detectedGpios: gpios,
     detectedLibraries: extractLibraries(merged),
     detectedPeripherals: extractPeripherals(merged),
-    ambiguousReferences: ambiguous,
+    // 同时附带冲突 AmbiguousRef，使现有 openQuestions 路径自动暴露
+    ambiguousReferences: [...ambiguous, ...conflictsToAmbiguous(symbolConflicts)],
   };
+  if (symbolConflicts.length > 0) {
+    result.symbolConflicts = symbolConflicts;
+  }
+  return result;
 }

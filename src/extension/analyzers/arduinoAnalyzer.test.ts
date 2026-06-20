@@ -9,6 +9,7 @@ import {
   extractLibraries,
   extractGpios,
   extractPeripherals,
+  detectSymbolConflicts,
   type SourceFile,
 } from './arduinoAnalyzer';
 
@@ -107,6 +108,70 @@ describe('extractPeripherals', () => {
   });
 });
 
+describe('detectSymbolConflicts', () => {
+  it('两文件同名 #define 不同值 → 一个冲突，含双方 file+line', () => {
+    const a = file('#define LED_PIN 2', 'a.h');
+    const b = file('\n#define LED_PIN 13', 'b.h');
+    const conflicts = detectSymbolConflicts([a, b]);
+    expect(conflicts).toHaveLength(1);
+    const c = conflicts[0];
+    expect(c.symbol).toBe('LED_PIN');
+    expect(c.conflictType).toBe('redefinition');
+    expect(c.definitions).toHaveLength(2);
+    // file 名出现
+    const fileSet = new Set(c.definitions.map((d) => d.file));
+    expect(fileSet.has('a.h')).toBe(true);
+    expect(fileSet.has('b.h')).toBe(true);
+    // 行号：a.h 第1行，b.h 第2行（前置换行）
+    const aDef = c.definitions.find((d) => d.file === 'a.h')!;
+    const bDef = c.definitions.find((d) => d.file === 'b.h')!;
+    expect(aDef.line).toBe(1);
+    expect(aDef.value).toBe('2');
+    expect(bDef.line).toBe(2);
+    expect(bDef.value).toBe('13');
+  });
+
+  it('两文件同名 #define 相同值 → 无冲突', () => {
+    const a = file('#define LED_PIN 2', 'a.h');
+    const b = file('#define LED_PIN 2', 'b.h');
+    expect(detectSymbolConflicts([a, b])).toHaveLength(0);
+  });
+
+  it('两文件同名 const int 引脚不同值 → 冲突', () => {
+    const a = file('const int MOTOR = 5;', 'motor_a.h');
+    const b = file('const int MOTOR = 9;', 'motor_b.h');
+    const conflicts = detectSymbolConflicts([a, b]);
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].symbol).toBe('MOTOR');
+    expect(new Set(conflicts[0].definitions.map((d) => d.value))).toEqual(new Set(['5', '9']));
+  });
+
+  it('单处定义 → 无冲突', () => {
+    expect(detectSymbolConflicts([file('#define LED_PIN 2', 'a.h')])).toHaveLength(0);
+  });
+
+  it('注释中的重定义不被误检为冲突', () => {
+    const a = file('#define LED_PIN 2', 'a.h');
+    const b = file('// #define LED_PIN 13\n#define OTHER 7', 'b.h');
+    expect(detectSymbolConflicts([a, b])).toHaveLength(0);
+  });
+
+  it('非引脚字面量值（表达式）不参与冲突判定', () => {
+    const a = file('#define GAIN (1 + 2)', 'a.h');
+    const b = file('#define GAIN (3 + 4)', 'b.h');
+    expect(detectSymbolConflicts([a, b])).toHaveLength(0);
+  });
+
+  it('多行文件中行号按出现位置计算', () => {
+    const a = file('line1\nline2\n#define PIN 4', 'a.h');
+    const b = file('#define PIN 5', 'b.h');
+    const conflicts = detectSymbolConflicts([a, b]);
+    expect(conflicts).toHaveLength(1);
+    const aDef = conflicts[0].definitions.find((d) => d.file === 'a.h')!;
+    expect(aDef.line).toBe(3);
+  });
+});
+
 describe('analyzeArduinoCode', () => {
   it('端到端：ESP32 传感器 sketch', () => {
     const code = `
@@ -145,5 +210,36 @@ describe('analyzeArduinoCode', () => {
   it('注释中的代码不被误检', () => {
     const r = analyzeArduinoCode([file('// pinMode(99, OUTPUT);\nvoid loop(){}')]);
     expect(r.detectedGpios).toHaveLength(0);
+  });
+
+  it('正常单文件项目：零冲突，检测不受影响', () => {
+    const code = `
+      #include <WiFi.h>
+      #define LED 2
+      void setup() { pinMode(LED, OUTPUT); }`;
+    const r = analyzeArduinoCode([file(code)]);
+    // 无冲突时不附带 symbolConflicts 字段
+    expect(r.symbolConflicts).toBeUndefined();
+    expect(r.detectedGpios.map((g) => g.pin)).toContain('2');
+    expect(r.detectedLibraries).toEqual(['WiFi.h']);
+    expect(r.ambiguousReferences).toHaveLength(0);
+  });
+
+  it('跨文件冲突：structured symbolConflicts + AmbiguousRef 同时出现', () => {
+    const a = file('#define LED_PIN 2', 'a.h');
+    const b = file('#define LED_PIN 13\nvoid loop(){}', 'b.h');
+    const r = analyzeArduinoCode([a, b]);
+    // 结构化冲突
+    expect(r.symbolConflicts).toBeDefined();
+    expect(r.symbolConflicts).toHaveLength(1);
+    expect(r.symbolConflicts![0].symbol).toBe('LED_PIN');
+    expect(r.symbolConflicts![0].definitions).toHaveLength(2);
+    // 同一冲突也以 AmbiguousRef 形式出现（流入 openQuestions）
+    const ref = r.ambiguousReferences.find((x) => x.reference === 'LED_PIN');
+    expect(ref).toBeDefined();
+    expect(ref!.question).toBe(r.symbolConflicts![0].question);
+    // possibleMeanings 含 file 名
+    expect(ref!.possibleMeanings.some((m) => m.includes('a.h'))).toBe(true);
+    expect(ref!.possibleMeanings.some((m) => m.includes('b.h'))).toBe(true);
   });
 });

@@ -4,6 +4,7 @@ import { useInputStore } from '../store/inputStore';
 import vscodeApi from '../../shared/vscodeApi';
 import { createMessage } from '../../../shared/types';
 import type { PanelToExtension } from '../../../shared/types';
+import { buildConflictRows } from './symbolConflictView';
 import './CodeAnalysisPreview.css';
 
 /** 扫描结果预览 + 补充说明 + 确认/取消 */
@@ -26,6 +27,8 @@ export function CodeAnalysisPreview(): React.ReactElement | null {
   }, [result, notes, addMessage, setIsGenerating, resetCodeAnalysis]);
 
   if (!result) return null;
+
+  const conflictRows = buildConflictRows(result.symbolConflicts);
 
   return (
     <div className="code-preview">
@@ -75,6 +78,33 @@ export function CodeAnalysisPreview(): React.ReactElement | null {
           <ul className="code-preview__list">
             {result.ambiguousReferences.map((a) => (
               <li key={a.reference}>{a.reference}: {a.question}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {conflictRows.length > 0 && (
+        <div className="code-preview__section code-preview__section--conflict">
+          <span className="code-preview__label">
+            符号冲突（需人工复核） ({conflictRows.length})
+          </span>
+          <p className="code-preview__hint">
+            启发式扫描发现同名常量在多处定义，请人工确认实际引脚（非编译器解析，仅供参考）。
+          </p>
+          <ul className="code-preview__conflict-list">
+            {conflictRows.map((c) => (
+              <li key={c.symbol} className="code-preview__conflict-item">
+                <div className="code-preview__conflict-head">
+                  <code className="code-preview__conflict-symbol">{c.symbol}</code>
+                  <span className="code-preview__conflict-kind">{c.kind}</span>
+                </div>
+                <ul className="code-preview__conflict-locations">
+                  {c.locations.map((loc) => (
+                    <li key={loc}><code>{loc}</code></li>
+                  ))}
+                </ul>
+                <div className="code-preview__conflict-advice">建议人工复核：{c.question}</div>
+              </li>
             ))}
           </ul>
         </div>
