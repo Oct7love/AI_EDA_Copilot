@@ -15,7 +15,8 @@ import { exportJson } from './export/jsonExporter';
 import { registerCommands } from './commands';
 import { ArtifactStateService } from './services/ArtifactStateService';
 import { deriveOverview } from './services/overviewDeriver';
-import type { RequirementField, ArtifactKey, SessionArtifacts } from '@shared/types';
+import { collectArtifacts as collectSessionArtifacts } from './services/artifactCollector';
+import type { RequirementField, ArtifactKey, SessionArtifacts, AnalysisRequest } from '@shared/types';
 
 const EXTENSION_ID = 'ai-eda-copilot';
 
@@ -62,8 +63,9 @@ export function activate(context: vscode.ExtensionContext): void {
   sessionManager.setArtifactStateService(artifactState);
 
   // 初始全管线完成后：快照为新版本（regenerate 路径不走这里，见 isRegenerating 守卫）
+  // 保存失败已在 SessionManager 内上报到面板+日志，这里仅吸收 reject 避免 unhandled rejection
   pipeline.onPipelineComplete = () => {
-    sessionManager.snapshotVersion();
+    sessionManager.snapshotVersion().catch(() => { /* 已上报 */ });
   };
 
   // 拦截 assistant 消息用于对话镜像
@@ -84,9 +86,25 @@ export function activate(context: vscode.ExtensionContext): void {
 
       case 'submit_requirement': {
         const { text, mode } = message.payload;
-        const request = mode === 'form'
-          ? inputService.fromForm(JSON.parse(text))
-          : inputService.fromNaturalLanguage(text);
+        let request: AnalysisRequest;
+        if (mode === 'form') {
+          // 表单文本是 webview 序列化的 JSON；畸形输入不应静默丢弃使面板像卡住
+          try {
+            request = inputService.fromForm(JSON.parse(text));
+          } catch (err) {
+            const m = err instanceof Error ? err.message : String(err);
+            outputChannel.appendLine(`[submit_requirement] 表单 JSON 解析失败: ${m}`);
+            sidePanelProvider.postMessage({
+              type: 'error',
+              source: 'extension',
+              payload: { code: 'INVALID_REQUEST', message: '表单数据解析失败，请重试' },
+              timestamp: Date.now(),
+            });
+            break;
+          }
+        } else {
+          request = inputService.fromNaturalLanguage(text);
+        }
 
         // 对话镜像：记录用户消息
         sessionManager.mirrorUserMessage(text);
@@ -118,7 +136,8 @@ export function activate(context: vscode.ExtensionContext): void {
         break;
 
       case 'session_save':
-        sessionManager.saveCurrentSession(message.payload?.name);
+        // 保存失败已在 SessionManager 内上报到面板+日志，这里吸收 reject 避免 unhandled rejection
+        sessionManager.saveCurrentSession(message.payload?.name).catch(() => { /* 已上报 */ });
         break;
 
       case 'session_new':
@@ -194,6 +213,10 @@ export function activate(context: vscode.ExtensionContext): void {
         break;
       }
 
+      case 'cancel_analysis':
+        pipeline.cancel();
+        break;
+
       case 'submit_code_analysis': {
         const { result, notes } = message.payload;
         const request = inputService.fromCodeAnalysis(result, notes);
@@ -212,15 +235,14 @@ export function activate(context: vscode.ExtensionContext): void {
     { webviewOptions: { retainContextWhenHidden: true } }
   );
 
-  // ── 导出辅助：从管线缓存收集产物 ──
-  const collectArtifacts = (): SessionArtifacts => ({
+  // ── 导出辅助：从管线缓存收集产物（含 procurement / designReview，复用共享收集器）──
+  const collectArtifacts = (): SessionArtifacts => collectSessionArtifacts({
     requirementSpec: pipeline.lastSpec,
-    overview: pipeline.lastSpec ? deriveOverview(pipeline.lastSpec) : null,
     bomItems: pipeline.lastBomItems,
-    procurementItems: [],
+    procurementItems: pipeline.lastProcurementItems,
     schematicIntent: pipeline.lastSchematic,
     pcbLayoutPlan: pipeline.lastPcbLayout,
-    designReviewResult: null,
+    designReviewResult: pipeline.lastDesignReviewResult,
   });
 
   // ── Report Panel 消息路由 ──
@@ -246,9 +268,22 @@ export function activate(context: vscode.ExtensionContext): void {
         }
         break;
       }
-      case 'open_external_link':
-        vscode.env.openExternal(vscode.Uri.parse(message.payload.url));
+      case 'open_external_link': {
+        // 纵深防御：仅放行 http(s)，拦截 file:/vscode:/javascript: 等可能被滥用的 scheme
+        const raw = message.payload?.url ?? '';
+        let target: vscode.Uri | null = null;
+        try {
+          target = vscode.Uri.parse(raw, true);
+        } catch {
+          target = null;
+        }
+        if (target && (target.scheme === 'https' || target.scheme === 'http')) {
+          vscode.env.openExternal(target);
+        } else {
+          outputChannel.appendLine(`[open_external_link] 已拦截非 http(s) 链接: ${raw}`);
+        }
         break;
+      }
       case 'bom_export':
         if (pipeline.lastBomItems.length > 0) {
           exportBomCsv(pipeline.lastBomItems);
@@ -302,7 +337,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
         pipeline.regenerateFrom(stage).then(() => {
           outputChannel.appendLine(`[regenerate] ${stage} completed`);
-          sessionManager.autoSave();
+          // 保存失败已在 SessionManager 内上报；吸收 reject 避免 unhandled rejection
+          sessionManager.autoSave().catch(() => { /* 已上报 */ });
         }).catch((err) => {
           artifactState.markError(stage);
           outputChannel.appendLine(`[regenerate] ${stage} error: ${err}`);

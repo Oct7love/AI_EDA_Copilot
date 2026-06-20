@@ -40,7 +40,8 @@ export type PanelToExtension =
   | BaseMessage<'session_delete', { sessionId: string }>
   | BaseMessage<'session_rename', { sessionId: string; name: string }>
   | BaseMessage<'pick_code_folder', void>
-  | BaseMessage<'submit_code_analysis', { result: CodeAnalysisResult; notes: string }>;
+  | BaseMessage<'submit_code_analysis', { result: CodeAnalysisResult; notes: string }>
+  | BaseMessage<'cancel_analysis', void>;
 
 // ─── Extension → 侧边栏 ─────────────────────────────
 

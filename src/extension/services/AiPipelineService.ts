@@ -15,7 +15,7 @@
  * 设计审查：先执行本地规则引擎（RuleEngineService），再调用 AI 深度审查，合并结果
  */
 import * as vscode from 'vscode';
-import type { AnalysisRequest, RequirementSpec, BOMItem, SchematicIntent, PCBLayoutPlan, PipelineStage, AiErrorCode, ArtifactKey } from '@shared/types';
+import type { AnalysisRequest, RequirementSpec, BOMItem, ProcurementItem, SchematicIntent, PCBLayoutPlan, DesignReviewResult, PipelineStage, AiErrorCode, ArtifactKey } from '@shared/types';
 import { AiAdapter, AiAdapterError, classifyError } from '../adapters/AiAdapter';
 import { buildRequirementPrompt } from '../prompts/requirementPrompt';
 import { buildBomPrompt } from '../prompts/bomPrompt';
@@ -33,19 +33,25 @@ import {
 import type { SidePanelProvider } from '../providers/SidePanelProvider';
 import { ReportPanelManager } from '../providers/ReportPanelManager';
 import { deriveOverview } from './overviewDeriver';
-import { streamWithRetry, type StreamRunnerDeps } from './pipelineStreamRunner';
+import { streamWithRetry, StreamStageError, type StreamRunnerDeps } from './pipelineStreamRunner';
 import { runAllRules } from './RuleEngineService';
 
 export class AiPipelineService {
   private isRunning = false;
   private isRegenerating = false;
+  /** 当前运行任务的取消控制器（用户取消 / 新任务取代旧任务时 abort） */
+  private currentAbort: AbortController | null = null;
+  /** 运行代次：新任务自增，旧任务据此判断自己是否已被取代（避免复位新任务状态 / 覆盖新任务结果） */
+  private runGeneration = 0;
   private readonly adapter: AiAdapter;
   private readonly procurement = new ProcurementService();
   private readonly streamDeps: StreamRunnerDeps;
   lastSpec: RequirementSpec | null = null;
   lastBomItems: BOMItem[] = [];
+  lastProcurementItems: ProcurementItem[] = [];
   lastSchematic: SchematicIntent | null = null;
   lastPcbLayout: PCBLayoutPlan | null = null;
+  lastDesignReviewResult: DesignReviewResult | null = null;
 
   /** 管线全部完成后的回调（由 SessionManager 接线用于自动保存） */
   onPipelineComplete?: () => void;
@@ -91,19 +97,57 @@ export class AiPipelineService {
   }
 
   private handleStageError(stage: string, err: unknown): void {
-    const code = err instanceof AiAdapterError ? err.code : classifyError(err);
+    const code = err instanceof AiAdapterError ? err.code
+      : err instanceof StreamStageError ? err.code
+      : classifyError(err);
+    // 错误对象可能携带更精确的失败阶段（StreamStageError.stage）
+    const failedStage = err instanceof StreamStageError ? err.stage : stage;
+    // 用户取消：静默处理，不显示成崩溃；最终「已取消」提示由 run* 的 finally 统一发出（避免重复）
+    if (code === 'CANCELLED') {
+      this.outputChannel.appendLine(`[Pipeline] stage=${failedStage} cancelled`);
+      return;
+    }
     const msg = err instanceof Error ? err.message : String(err);
-    this.outputChannel.appendLine(`[Pipeline] ${stage} error: ${code} — ${msg}`);
-    this.sendPanelError(code, msg);
+    this.outputChannel.appendLine(`[Pipeline] stage=${failedStage} error: ${code} — ${msg}`);
+    // UI 错误带上阶段，避免只显示通用失败
+    this.sendPanelError(code, `[${failedStage}] ${msg}`);
+  }
+
+  /** 用户取消当前运行的管线：取消信号传播到 AI 流、采购查询与各阶段；isRunning 在任务 unwind 后由 finally 复位 */
+  cancel(): void {
+    if (!this.isRunning || !this.currentAbort) return;
+    this.outputChannel.appendLine('[Pipeline] user cancel requested');
+    this.currentAbort.abort();
+    this.panelProvider.postMessage({
+      type: 'ai_chat_response',
+      source: 'extension',
+      payload: { content: '正在取消分析...', isStreaming: false },
+      timestamp: Date.now(),
+    });
+  }
+
+  /** 统一的「已取消」终态提示（由 run* finally 在确为当前代且已 abort 时发出，恰好一次） */
+  private sendCancelledNotice(): void {
+    this.panelProvider.postMessage({
+      type: 'ai_chat_response',
+      source: 'extension',
+      payload: { content: '分析已取消。', isStreaming: false },
+      timestamp: Date.now(),
+    });
   }
 
   async runRequirementStage(request: AnalysisRequest): Promise<void> {
-    if (this.isRunning) {
-      this.sendPanelError('INVALID_REQUEST', '已有分析任务运行中，请等待完成');
-      return;
+    // 新任务取代运行中的旧任务：abort 旧任务（其在飞流抛 CANCELLED 停止），generation 守卫避免旧任务复位/覆盖新任务
+    if (this.isRunning && this.currentAbort) {
+      this.outputChannel.appendLine('[Pipeline] 新任务取代运行中的旧任务，旧任务已请求取消');
+      this.currentAbort.abort();
     }
-
+    const myGen = ++this.runGeneration;
+    const controller = new AbortController();
+    this.currentAbort = controller;
+    const signal = controller.signal;
     this.isRunning = true;
+    this.isRegenerating = false;
 
     try {
       if (!(await this.ensureApiKey())) {
@@ -124,14 +168,15 @@ export class AiPipelineService {
       const messages = buildRequirementPrompt(inputText, language);
       this.outputChannel.appendLine(`[Pipeline] requirement stage, model=${model}, inputLen=${inputText.length}`);
 
-      const fullText = await streamWithRetry(this.streamDeps, model, messages);
+      const fullText = await streamWithRetry(this.streamDeps, model, messages, 'requirement', false, signal);
       this.outputChannel.appendLine(`[Pipeline] fullText length=${fullText.length}, preview=${fullText.slice(0, 500)}`);
 
+      if (signal.aborted) return;
       this.sendPanelStatus('requirement', 80);
       const spec = parseRequirementSpec(fullText, request);
 
       if (!spec) {
-        await this.runFallbackChat(inputText, model);
+        await this.runFallbackChat(inputText, model, signal);
         return;
       }
 
@@ -157,22 +202,28 @@ export class AiPipelineService {
       this.sendPanelStatus('requirement', 100);
       this.outputChannel.appendLine('[Pipeline] requirement stage completed');
 
-      await this.runBomStage(spec);
+      await this.runBomStage(spec, signal);
     } catch (err) {
       this.handleStageError('requirement', err);
     } finally {
-      this.isRunning = false;
+      // 仅当仍是当前代时才复位（避免被取代的旧任务复位新任务的 isRunning）；取消时发一次终态提示
+      if (myGen === this.runGeneration) {
+        this.isRunning = false;
+        this.currentAbort = null;
+        if (signal.aborted) this.sendCancelledNotice();
+      }
     }
   }
 
-  async runBomStage(spec: RequirementSpec): Promise<void> {
+  async runBomStage(spec: RequirementSpec, signal?: AbortSignal): Promise<void> {
     try {
+      if (signal?.aborted) return;
       this.sendPanelStatus('bom', 0);
       this.outputChannel.appendLine('[Pipeline] bom stage started');
 
       const { model, language } = this.getConfig();
       const messages = buildBomPrompt(spec, language);
-      const fullText = await streamWithRetry(this.streamDeps, model, messages);
+      const fullText = await streamWithRetry(this.streamDeps, model, messages, 'bom', false, signal);
 
       this.sendPanelStatus('bom', 50);
       const bomItems = parseBomItems(fullText);
@@ -192,11 +243,16 @@ export class AiPipelineService {
         timestamp: Date.now(),
       });
 
+      // 有界并发 + 可取消；进度按完成项累进
       const procItems = await this.procurement.matchAll(bomItems, (cur, total) => {
         this.sendPanelStatus('procurement', Math.round((cur / total) * 100));
-      });
+      }, signal);
+
+      // 取消则不写缓存/不推送，避免覆盖新任务结果
+      if (signal?.aborted) return;
 
       this.lastBomItems = bomItems;
+      this.lastProcurementItems = procItems;
 
       ReportPanelManager.postMessage({
         type: 'bom_data',
@@ -211,30 +267,34 @@ export class AiPipelineService {
         timestamp: Date.now(),
       });
 
+      // 进度统计：命中（有货/缺货均算查到）vs 未命中或查询失败
+      const matched = procItems.filter((p) => p.queryStatus === 'in_stock' || p.queryStatus === 'out_of_stock').length;
+      const failed = procItems.length - matched;
       this.panelProvider.postMessage({
         type: 'ai_chat_response',
         source: 'extension',
-        payload: { content: `BOM 选型完成（${bomItems.length} 项），采购匹配已更新。开始原理图分析...`, isStreaming: false },
+        payload: { content: `BOM 选型完成（${bomItems.length} 项），采购匹配完成（${matched} 命中 / ${failed} 未命中或查询失败）。开始原理图分析...`, isStreaming: false },
         timestamp: Date.now(),
       });
       this.sendPanelStatus('bom', 100);
       this.onStageComplete?.('bom');
       this.outputChannel.appendLine('[Pipeline] bom + procurement stage completed');
 
-      await this.runSchematicStage(spec, bomItems);
+      await this.runSchematicStage(spec, bomItems, signal);
     } catch (err) {
       this.handleStageError('bom', err);
     }
   }
 
-  async runSchematicStage(spec: RequirementSpec, bomItems: BOMItem[]): Promise<void> {
+  async runSchematicStage(spec: RequirementSpec, bomItems: BOMItem[], signal?: AbortSignal): Promise<void> {
     try {
+      if (signal?.aborted) return;
       this.sendPanelStatus('schematic', 0);
       this.outputChannel.appendLine('[Pipeline] schematic stage started');
 
       const { model, language } = this.getConfig();
       const messages = buildSchematicPrompt(spec, bomItems, language);
-      const fullText = await streamWithRetry(this.streamDeps, model, messages);
+      const fullText = await streamWithRetry(this.streamDeps, model, messages, 'schematic', false, signal);
 
       this.sendPanelStatus('schematic', 80);
       const schematic = parseSchematicIntent(fullText);
@@ -264,20 +324,21 @@ export class AiPipelineService {
       this.onStageComplete?.('schematic');
       this.outputChannel.appendLine('[Pipeline] schematic stage completed');
 
-      await this.runPcbLayoutStage(spec, bomItems, schematic);
+      await this.runPcbLayoutStage(spec, bomItems, schematic, signal);
     } catch (err) {
       this.handleStageError('schematic', err);
     }
   }
 
-  async runPcbLayoutStage(spec: RequirementSpec, bomItems: BOMItem[], schematic: SchematicIntent): Promise<void> {
+  async runPcbLayoutStage(spec: RequirementSpec, bomItems: BOMItem[], schematic: SchematicIntent, signal?: AbortSignal): Promise<void> {
     try {
+      if (signal?.aborted) return;
       this.sendPanelStatus('pcb_layout', 0);
       this.outputChannel.appendLine('[Pipeline] pcb_layout stage started');
 
       const { model, language } = this.getConfig();
       const messages = buildPcbLayoutPrompt(spec, bomItems, schematic, language);
-      const fullText = await streamWithRetry(this.streamDeps, model, messages);
+      const fullText = await streamWithRetry(this.streamDeps, model, messages, 'pcb_layout', false, signal);
 
       this.sendPanelStatus('pcb_layout', 80);
       const plan = parsePcbLayoutPlan(fullText);
@@ -307,7 +368,7 @@ export class AiPipelineService {
       this.onStageComplete?.('pcbLayout');
       this.outputChannel.appendLine('[Pipeline] pcb_layout stage completed');
 
-      await this.runDesignReviewStage(spec, bomItems, schematic, plan);
+      await this.runDesignReviewStage(spec, bomItems, schematic, plan, signal);
     } catch (err) {
       this.handleStageError('pcb_layout', err);
     }
@@ -318,8 +379,10 @@ export class AiPipelineService {
     bomItems: BOMItem[],
     schematic: SchematicIntent | null,
     pcbLayout: PCBLayoutPlan | null,
+    signal?: AbortSignal,
   ): Promise<void> {
     try {
+      if (signal?.aborted) return;
       this.sendPanelStatus('design_review', 0);
       this.outputChannel.appendLine('[Pipeline] design_review stage started');
 
@@ -339,7 +402,7 @@ export class AiPipelineService {
       this.sendPanelStatus('design_review', 30);
       const { model, language } = this.getConfig();
       const messages = buildDesignReviewPrompt(spec, bomItems, schematic, pcbLayout, language);
-      const fullText = await streamWithRetry(this.streamDeps, model, messages);
+      const fullText = await streamWithRetry(this.streamDeps, model, messages, 'design_review', false, signal);
 
       this.sendPanelStatus('design_review', 80);
       const aiFindings = parseDesignReviewFindings(fullText);
@@ -357,6 +420,7 @@ export class AiPipelineService {
         summary,
         reviewedAt: new Date().toISOString(),
       };
+      this.lastDesignReviewResult = designReviewResult;
 
       ReportPanelManager.postMessage({
         type: 'design_review_data',
@@ -393,11 +457,11 @@ export class AiPipelineService {
   }
 
   /** 非硬件需求时的普通对话回退，直接流式回答不强制 JSON */
-  private async runFallbackChat(inputText: string, model: string): Promise<void> {
+  private async runFallbackChat(inputText: string, model: string, signal?: AbortSignal): Promise<void> {
     const messages = [
       { role: 'user' as const, content: inputText },
     ];
-    await streamWithRetry(this.streamDeps, model, messages, true);
+    await streamWithRetry(this.streamDeps, model, messages, 'requirement', true, signal);
   }
 
   /**
@@ -415,6 +479,10 @@ export class AiPipelineService {
       return;
     }
 
+    const myGen = ++this.runGeneration;
+    const controller = new AbortController();
+    this.currentAbort = controller;
+    const signal = controller.signal;
     this.isRunning = true;
     this.isRegenerating = true;
 
@@ -433,20 +501,23 @@ export class AiPipelineService {
 
       switch (stage) {
         case 'bom':
-          await this.runBomStage(this.lastSpec);
+          await this.runBomStage(this.lastSpec, signal);
           break;
         case 'schematic':
-          await this.runSchematicStage(this.lastSpec, this.lastBomItems);
+          await this.runSchematicStage(this.lastSpec, this.lastBomItems, signal);
           break;
         case 'pcbLayout':
-          await this.runPcbLayoutStage(this.lastSpec, this.lastBomItems, this.lastSchematic!);
+          await this.runPcbLayoutStage(this.lastSpec, this.lastBomItems, this.lastSchematic!, signal);
           break;
         case 'procurement': {
-          // 单独重跑采购匹配（不调用 AI）
+          // 单独重跑采购匹配（不调用 AI），可取消
+          if (signal.aborted) break;
           this.sendPanelStatus('procurement', 0);
           const procItems = await this.procurement.matchAll(this.lastBomItems, (cur, total) => {
             this.sendPanelStatus('procurement', Math.round((cur / total) * 100));
-          });
+          }, signal);
+          if (signal.aborted) break;
+          this.lastProcurementItems = procItems;
           ReportPanelManager.postMessage({
             type: 'procurement_data',
             source: 'extension',
@@ -460,7 +531,7 @@ export class AiPipelineService {
         case 'designReview':
           await this.runDesignReviewStage(
             this.lastSpec, this.lastBomItems,
-            this.lastSchematic, this.lastPcbLayout,
+            this.lastSchematic, this.lastPcbLayout, signal,
           );
           break;
         default:
@@ -469,8 +540,12 @@ export class AiPipelineService {
     } catch (err) {
       this.handleStageError(stage, err);
     } finally {
-      this.isRunning = false;
-      this.isRegenerating = false;
+      if (myGen === this.runGeneration) {
+        this.isRunning = false;
+        this.isRegenerating = false;
+        this.currentAbort = null;
+        if (signal.aborted) this.sendCancelledNotice();
+      }
     }
   }
 }
