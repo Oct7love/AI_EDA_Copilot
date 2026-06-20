@@ -67,30 +67,54 @@
           ],
           "default": "zh",
           "description": "Report output language"
+        },
+        "aiEda.requestTimeoutMs": {
+          "type": "number",
+          "default": 120000,
+          "minimum": 10000,
+          "description": "Per-request timeout (ms) for establishing the AI response. App-level retry owns retries."
+        },
+        "aiEda.streamIdleTimeoutMs": {
+          "type": "number",
+          "default": 90000,
+          "minimum": 5000,
+          "description": "Max idle (ms) between streamed chunks before the stream is treated as stalled and aborted."
+        },
+        "aiEda.debugLogging": {
+          "type": "boolean",
+          "default": false,
+          "description": "Log raw AI response chunks to the output channel for diagnosis (verbose; may include response content)."
         }
       }
     }
   },
   "scripts": {
     "compile": "npm run check-types && node esbuild.js",
-    "check-types": "tsc --noEmit",
+    "check-types": "npm run check-types:ext && npm run check-types:webview",
+    "check-types:ext": "tsc --noEmit",
+    "check-types:webview": "tsc --noEmit -p tsconfig.webview.json",
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "vscode:prepublish": "npm run package",
     "package": "npm run check-types && node esbuild.js --production",
-    "lint": "eslint src --ext ts,tsx",
+    "lint": "eslint src",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@types/vscode": "^1.96.0",
     "esbuild": "^0.24.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^15.15.0",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.7.0",
+    "typescript-eslint": "^8.61.1",
     "vitest": "^4.0.18"
   },
   "dependencies": {

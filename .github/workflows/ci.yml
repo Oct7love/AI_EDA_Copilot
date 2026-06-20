@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Production-only audit gate. Only runtime `dependencies` ship in the
+      # bundled dist/extension.js (.vsix); dev deps and their transitive
+      # advisories are excluded via --omit=dev. Currently non-blocking
+      # (continue-on-error) because the single prod advisory (form-data <=4.0.5,
+      # high) reaches the tree only through openai > @types/node-fetch and
+      # cannot be fixed without a package.json change. Flip to blocking once the
+      # prod tree is clean at --audit-level=high.
+      - name: Audit production dependencies (gate)
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
+
+      # Informational full audit (dev + prod) for awareness only. Never blocks.
+      - name: Audit all dependencies (informational)
+        run: npm audit || true
+
+      - name: Type check
+        run: npm run check-types
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Test
+        run: npm test
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Package
+        run: npm run package

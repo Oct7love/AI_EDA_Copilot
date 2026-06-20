@@ -9,8 +9,9 @@ interface VsCodeApi {
   setState(state: unknown): void;
 }
 
-// as any: VS Code Webview 全局 API 无 TypeScript 类型声明，必须通过 globalThis 动态访问
-const vscodeApi: VsCodeApi = (globalThis as any).acquireVsCodeApi?.()
+// VS Code Webview 全局 API 无 TypeScript 类型声明，通过 globalThis 上的可选属性窄化访问
+const acquireVsCodeApi = (globalThis as { acquireVsCodeApi?: () => VsCodeApi }).acquireVsCodeApi;
+const vscodeApi: VsCodeApi = acquireVsCodeApi?.()
   ?? { postMessage: () => {}, getState: () => null, setState: () => {} };
 
 export default vscodeApi;

@@ -1,6 +1,5 @@
 /** BOM 板块，5 列表格 + 行展开详情 + CSV 导出 */
 import React, { useState } from 'react';
-import type { BOMItem } from '../../../shared/types';
 import { createMessage } from '../../../shared/types';
 import vscodeApi from '../../shared/vscodeApi';
 import { useReportStore } from '../store/reportStore';
